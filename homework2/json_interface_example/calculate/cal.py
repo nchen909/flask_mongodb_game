@@ -24,8 +24,8 @@ market = client.game.market
 treasures = client.game.treasure
 info=client.game.info
 info.create_index([("username", ASCENDING)], unique=True)#按用户名建立索引
-
-
+sessiondb=client.game.sessiondb
+sessiondb.create_index([("username", ASCENDING)], unique=True)
 ###python中设置成这样（外面）需要在函数中调用且改变的全局变量需要在函数中写成global
 
 #设置信号量work_flag,travel_flag
@@ -36,7 +36,7 @@ def oneday():#flask会运行运行的那个文件中所有被import到的有路�
     global work_flag,travel_flag
     while 1:
         time.sleep(60)#60s为一天
-        work_flag = 1
+        work_flag = 1#每个人work_flag不一样
         travel_flag = 1
 
 timer=threading.Timer(0,oneday)
@@ -52,6 +52,7 @@ def work(username):
     else:
         if (work_flag==1):
             work_flag=0
+            money0=ana(get_user(username,'money'))
             money=ana(get_user(username,'money'))
             if ana(get_user(username,'wear'))['工具']:
                 base=sum(list(map(lambda x:ana(get_treasure(x,'value')),ana(get_user(username,'wear'))['工具'])))*10#基准
@@ -60,7 +61,7 @@ def work(username):
                 change_user(username,'money',money)
             else:
                 pass#不挂工具拿不到钱
-            return jsonify({'result':'现在有钱{0}'.format(money),'ok':1})
+            return jsonify({'result':'原来有钱{0},现在有钱{1}'.format(money0,money),'ok':1})
         else:
             return jsonify({'result':'您今天已经工作过','ok':0})
 #寻宝
@@ -143,18 +144,24 @@ def login():
         print(username)
         pwd = request.form.get('pwd')
         session['username'] = username
+        print(request.cookies.get('session'))
+        # if sessiondb.find_one({'username':username}):
+        #     sessiondb.delete_one({'username':username})
+        # sessiondb.insert_one({'username':username,'session':request.cookies.get('session')})
         #print(session.get('username'))
         return redirect('/user/test?username={0}&pwd={1}'.format(username,str(urllib.parse.quote(str(hashlib.md5(pwd.encode("utf-8")).digest()))))) # 如果是 POST 方法就执行登录操作
     elif request.method == 'GET':
         return('PLEASE USE POST TO LOGIN!')   # 如果是 GET 方法就展示登录表单
 
-
+###########################写pytest时发现 如果是这么写 return就返回一个303的界面不走下去
+###########################所以如果redirect的界面人访问不到 那就是
 # @bp.route('/nopwd')
 # # def nopwd():
 # #     return()
 #查看用户名密码是否正确
 @bp.route('/test')#/<string:username>/<string:pwd>')
 def index():
+
     username = request.args.get('username')
     pwd = request.args.get('pwd')
     print(pwd)
@@ -163,15 +170,15 @@ def index():
 
     except DuplicateKeyError:
         if (info.find_one({ "username": username,'pwd':pwd })):#以name建立索引找起来就快
-            return "登录成功,请进行游戏"
+            return jsonify({"result":"登录成功,请进行游戏","ok":1})
         else:
-            return "密码错误，请重新login再post密码"
+            return jsonify({"result":"密码错误，请重新login再post密码","ok":0})
     else:
         user.insert_one({"name": username, "money": 200,
                          "pocket": {"工具": ["衠钢槊"], "配饰": ["烂银甲"]}
                             ,'lucky':0,'wear':{"工具": [], "配饰": []},
                          'onmarket':{"工具": [], "配饰": []}})
-        return jsonify({"cue":"新建玩家成功，您的初始配置为","name": username, "money": 200,
+        return jsonify({"result":"新建玩家成功，您的初始配置为","name": username, "money": 200,
                          "pocket": {"工具": ["衠钢槊"], "配饰": ["烂银甲"]}
                             ,'lucky':0,'wear':{"工具": [], "配饰": []},
                         'onmarket':{"工具": [], "配饰": []}})
@@ -183,6 +190,15 @@ def attr_(username,attr):
         return redirect('/user/login')
     else:
         return get_user(username,attr)
+
+##查看宝物的某个属性
+@bp.route("/<string:username>/see/<string:treasure>/<string:attr>", methods=['GET'])
+def see_attr_(username,treasure,attr):
+    if not session.get('username'):
+        return redirect('/user/login')
+    else:
+        return get_treasure(treasure,attr)
+
 ##穿戴
 @bp.route("/<string:username>/wear/<string:treasure>", methods=['GET'])
 def wear(username,treasure):
@@ -243,7 +259,7 @@ def unwear(username,treasure):
 #     markets.delete_one({"name": treasure})
 #     return "购买成功，金币余额 %d" % money1
 
-@bp.route("/<string:username>/<int:x>/<int:y>", methods=['GET'])
+@bp.route("/<string:cmd>/<int:x>/<int:y>", methods=['GET'])
 def cal_get(cmd, x, y):
     result, ok = cal_gut(cmd, x, y)
     return jsonify({"result": result, "ok": ok})

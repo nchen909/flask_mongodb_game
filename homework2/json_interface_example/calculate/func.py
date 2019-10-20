@@ -54,6 +54,7 @@ def get_treasure(treasure,attr):
 def check_pocket(username,the_property):
     pocket=ana(get_user(username,'pocket'))
     bws=pocket[the_property]
+    print('check_pocket', bws,len(bws))
     if (len(bws)==MAX_POCKET):
         values=[]
         for i in range(MAX_POCKET):
@@ -68,19 +69,30 @@ def check_pocket(username,the_property):
 def check_wear(username,the_property):
     wear = ana(get_user(username, 'wear'))
     gjs = wear[the_property]
-    if gjs=='工具':
+    if the_property=='工具':
+        print('check_wear',gjs,len(gjs))
         if (len(gjs) == MAX_GJ):
             values = []
             for i in range(MAX_GJ):
                 values.append(ana(get_treasure(gjs[i], 'value')))
+            print(wear[the_property])
+            add_pocket(username,wear[the_property][values.index(min(values))])
             wear[the_property].pop(values.index(min(values)))
+            print(wear[the_property])
+            print(wear)
             change_user(username, 'wear', wear)
-    elif gjs=='配饰':
+
+    elif the_property=='配饰':
+        print('check_wear', gjs,len(gjs))
         if (len(gjs) == MAX_PS):
             values = []
             for i in range(MAX_PS):
                 values.append(ana(get_treasure(gjs[i], 'value')))
+            print(wear[the_property])
+            add_pocket(username,wear[the_property][values.index(min(values))])
             wear[the_property].pop(values.index(min(values)))
+            print(wear[the_property])
+            print(wear)
             change_user(username, 'wear', wear)
     return
 # 查看某用户口袋中有无某宝物 有则result为宝物property pocket为该user的口袋{"工具": ["衠钢槊"], "配饰": ["烂银甲"]}
@@ -178,9 +190,10 @@ def add_pocket(username,treasure):
         # pocket[the_property].append(treasure)
         # user.update_one({'name': username}, {'$set': {'pocket':pocket}})
         the_property = ana(gt)
+
+        check_pocket(username,the_property)#满了得删一个再放到袋子
         pocket = ana(get_user(username, 'pocket'))
         pocket[the_property].append(treasure)
-        check_pocket(username,the_property)#满了得删一个再放到袋子
         change_user(username, 'pocket', pocket)
         return jsonify({"result": '宝物已进入口袋', "ok": 1})
     else:
@@ -248,7 +261,13 @@ def un_wear(username,treasure):
             change_user(username,'wear',wear)
             check_pocket(username, the_property)  # 满了得删一个再放到袋子
             add_pocket(username, treasure)
-            return jsonify({"result": '撤回成功，宝物已从佩戴中回到口袋',"wear":ana(get_user(username, 'wear')),"pocket":ana(get_user(username, 'pocket')), "ok": 1})
+            if the_property == '工具':
+                return jsonify({"result": '撤回成功，宝物已从佩戴中回到口袋',"wear":ana(get_user(username, 'wear')),"pocket":ana(get_user(username, 'pocket')) ,
+                            "ability":"工作能力基准下降至{0}".format(sum(list(map(lambda x:ana(get_treasure(x,'value')),ana(get_user(username,'wear'))['工具'])))*10),"ok": 1})
+            elif the_property=='配饰':
+                return jsonify({"result": '撤回成功，宝物已从佩戴中回到口袋',"wear":ana(get_user(username, 'wear')),"pocket":ana(get_user(username, 'pocket')) ,
+                            "lucky":"运气下降至{0}".format(ana(get_user(username,'lucky'))),"ok": 1})
+            #return jsonify({"result": '撤回成功，宝物已从佩戴中回到口袋',"wear":ana(get_user(username, 'wear')),"pocket":ana(get_user(username, 'pocket')), "ok": 1})
         else:
             return f
     else:
@@ -267,15 +286,21 @@ def add_wear(username,treasure):
             # wear[ana(get_treasure(treasure,'property'))].append(treasure)
             # user.update_one({'name': username}, {'$set': wear})
             the_property = ana(gt)
-            wear = ana(get_user(username, 'wear'))
-            wear[the_property].append(treasure)
+
             if the_property=='配饰':
                 lucky=ana(get_user(username,'lucky'))
                 lucky+=ana(get_treasure(treasure,'value'))
                 change_user(username, 'lucky', lucky)
             check_wear(username, the_property)  # 满了得删一个再装
+            wear = ana(get_user(username, 'wear'))
+            wear[the_property].append(treasure)
             change_user(username, 'wear', wear)
-            return jsonify({"result": '已从口袋中佩戴上',"wear":ana(get_user(username, 'wear')),"pocket":ana(get_user(username, 'pocket')) ,"ok": 1})
+            if the_property == '工具':
+                return jsonify({"result": '已从口袋中佩戴上',"wear":ana(get_user(username, 'wear')),"pocket":ana(get_user(username, 'pocket')) ,
+                            "ability":"工作能力基准提升至{0}".format(sum(list(map(lambda x:ana(get_treasure(x,'value')),ana(get_user(username,'wear'))['工具'])))*10),"ok": 1})
+            elif the_property=='配饰':
+                return jsonify({"result": '已从口袋中佩戴上',"wear":ana(get_user(username, 'wear')),"pocket":ana(get_user(username, 'pocket')) ,
+                            "lucky":"运气提升至{0}".format(ana(get_user(username,'lucky'))),"ok": 1})
         else:
             return f
     else:
@@ -310,9 +335,9 @@ def check_market_full(goods,price,sell):
     try:
         print(the_find[0]['goods'])
     except IndexError:
-        return jsonify({"result":"market无该name","ok": 0})
+        return jsonify({"result":"market无该商品记录","market":list(get_market()),"ok": 0})
     else:
-        return jsonify({"result":"market有该name","ok": 1})#返回最便宜的那条的id
+        return jsonify({"result":"market有该商品记录","market":list(get_market()),"ok": 1})#返回最便宜的那条的id（不设计此功能了 因为会有玩家专门挑贵的买）
 # 给market加一条信息
 def add_market(goods,price,sell):
     market.insert_one({"goods":goods, "price":price, "sell": sell})
@@ -323,10 +348,10 @@ def del_market(goods,price,sell):
     try:
         nouse=the_find[0]
     except IndexError:
-        return jsonify({"result":"market无该商品","ok": 0})
+        return jsonify({"result":"market无该商品记录","market":list(get_market()),"ok": 0})#找不到得让用户看一眼market
     else:
         market.delete_one({"goods":goods, "price":price, "sell": sell})
-        return jsonify({"result": "该商品已从market中移除", "ok": 1})
+        return jsonify({"result": "该商品已从market中移除","market":list(get_market()), "ok": 1})
 # 将一样物品从包中挂到市场
 def sell(username,treasure,price):
     gt = get_treasure(treasure, 'property')
@@ -383,7 +408,7 @@ def buy(username,treasure,price,sell):
                     return jsonify({"result": '购买成功', "pocket": ana(get_user(username, 'pocket')),
                                         "market": list(get_market()), "ok": 1})
                 else:
-                    return jsonify({"result": '钱不够', "money": ana(get_user(username, 'pocket')), "ok": 1})
+                    return jsonify({"result": '钱不够', "money": ana(get_user(username, 'pocket')), "ok": 0})
             else:
                 return f
         else:

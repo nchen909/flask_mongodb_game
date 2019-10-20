@@ -10,7 +10,7 @@
 
     export FLASK_APP=calculate/__init__.py
     flask run
-    
+
 终端显示，默认在5000端口监听
 
 > \* Serving Flask app "calculate/__init__.py" <br>
@@ -31,12 +31,30 @@
 
 # Test and Coverage
 
+可通过在根目录打开cmd
+
+通过执行
+
+```shell
+p
+```
+
+进行pytest测试
+
+执行
+
+```shell
+c
+```
+
+进行coverage测试
+
 利用[pytest](http://www.pytest.org/en/latest/)和[coverage](https://coverage.readthedocs.io/en/v4.5.x/)测试和评估代码
 
 执行单元测试
     
     pytest
-    
+
 覆盖率测试:
 
     coverage run -m pytest
