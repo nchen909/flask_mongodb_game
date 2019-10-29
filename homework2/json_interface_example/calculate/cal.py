@@ -15,7 +15,8 @@ import urllib.parse
 import time
 import threading,json
 bp = Blueprint("mul", __name__, url_prefix="/user")
-client = MongoClient('localhost', 27017)
+#client = MongoClient('localhost', 27017)
+client=MongoClient('mongodb+srv://mathskiller:11111111qQ@flaskgame-aoyhi.mongodb.net/test?retryWrites=true&w=majority')
 user = client.game.user
 user.create_index([("name", ASCENDING)], unique=True)
 #user name money pocket lucky wear

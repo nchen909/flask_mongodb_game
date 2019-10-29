@@ -4,8 +4,11 @@ from pymongo import ASCENDING
 from pymongo import MongoClient
 from pymongo.errors import DuplicateKeyError
 from pymongo.errors import BulkWriteError
+
 MAXINT=2147483647
-client = MongoClient('localhost', 27017)
+# client = MongoClient('localhost', 27017)
+#client=MongoClient('mongodb+srv://mathskiller:11111111qQ@flaskgame-aoyhi.mongodb.net/test')
+client=MongoClient('mongodb+srv://mathskiller:11111111qQ@flaskgame-aoyhi.mongodb.net/test?retryWrites=true&w=majority')
 mydb = client["game"]
 mycol = mydb["treasure"]
 

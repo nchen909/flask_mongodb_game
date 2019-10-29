@@ -21,7 +21,8 @@ from flask.testing import FlaskClient
 # from python_flask.action.opt import bp
 from homework2.json_interface_example.calculate.cal import bp
 import os
-clientmg = MongoClient('localhost', 27017)
+#clientmg = MongoClient('localhost', 27017)
+clientmg=MongoClient('mongodb+srv://mathskiller:11111111qQ@flaskgame-aoyhi.mongodb.net/test?retryWrites=true&w=majority')
 user = clientmg.game.user
 #user name money pocket lucky wear
 market = clientmg.game.market
