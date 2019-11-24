@@ -260,26 +260,26 @@ def unwear(username,treasure):
 #     markets.delete_one({"name": treasure})
 #     return "购买成功，金币余额 %d" % money1
 
-@bp.route("/<string:cmd>/<int:x>/<int:y>", methods=['GET'])
-def cal_get(cmd, x, y):
-    result, ok = cal_gut(cmd, x, y)
-    return jsonify({"result": result, "ok": ok})
-
-
-@bp.route("/json", methods=["POST"])
-def cal_post():
-    result, ok = cal_gut(request.json["cmd"], request.json["op1"], request.json["op2"])
-    return jsonify({"result": result, "ok": ok})
-
-
-def cal_gut(cmd, x, y):
-    if cmd == "add":
-        return x + y, True
-    elif cmd == "sub":
-        return x - y, True
-    elif cmd == "mul":
-        return x * y, True
-    elif cmd == "div":
-        return int(x / y), True
-    else:
-        return 0, False
+# @bp.route("/<string:cmd>/<int:x>/<int:y>", methods=['GET'])
+# def cal_get(cmd, x, y):
+#     result, ok = cal_gut(cmd, x, y)
+#     return jsonify({"result": result, "ok": ok})
+#
+#
+# @bp.route("/json", methods=["POST"])
+# def cal_post():
+#     result, ok = cal_gut(request.json["cmd"], request.json["op1"], request.json["op2"])
+#     return jsonify({"result": result, "ok": ok})
+#
+#
+# def cal_gut(cmd, x, y):
+#     if cmd == "add":
+#         return x + y, True
+#     elif cmd == "sub":
+#         return x - y, True
+#     elif cmd == "mul":
+#         return x * y, True
+#     elif cmd == "div":
+#         return int(x / y), True
+#     else:
+#         return 0, False

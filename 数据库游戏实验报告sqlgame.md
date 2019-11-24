@@ -1,0 +1,1141 @@
+**华东师范大学数据科学与工程学院实验报告**
+
+ 
+
+| **课程名称**：数据库                     | **年级**：2017     | **实践成绩**：    |
+| ---------------------------------------- | ---------------------- | --------------------- |
+| **指导教师**：周烜                     | **姓名**：陈诺         | **学号**：10175501112 |
+| **上机实践**名称：  数据库Web游戏 | **上机实践时间**：     | 2019.11 |
+
+# 实验目的
+
+1.熟练使用Postgresql（包括CRUD等操作），了解数据库该如何组织，以及ORM的使用
+
+2.熟练使用Flask框架搭后端
+
+3.掌握pytest测试
+
+4.使用环境:python3.7
+
+# 实验目标
+
+考虑以下游戏场景：
+
+\1.   每个游戏玩家都有一定数量的金币、宝物。有一个市场供玩家们买卖宝物。玩家可以将宝物放到市场上挂牌，自己确定价格。其他玩家支付足够的金币，可购买宝物。
+
+\2.   宝物分为两类：一类为工具，它决定持有玩家的工作能力；一类为配饰，它决定持有玩家的运气。
+
+\3.   每位玩家每天可以通过寻宝获得一件宝物，宝物的价值由玩家的运气决定。每位玩家每天可以通过劳动赚取金币，赚得多少由玩家的工作能力决定。（游戏中的一天可以是现实中的1分钟、5分钟、10分钟。自主设定。）
+
+\4.   每个宝物都有一个自己的名字（尽量不重复）。每位玩家能够佩戴的宝物是有限的（比如一个玩家只能佩戴一个工具和两个配饰）。多余的宝物被放在存储箱中，不起作用，但可以拿到市场出售。
+
+\5.   在市场上挂牌的宝物必须在存储箱中并仍然在存储箱中，直到宝物被卖出。挂牌的宝物可以被收回，并以新的价格重新挂牌。当存储箱装不下时，运气或工作能力值最低的宝物将被系统自动回收。
+
+\6.   假设游戏永不停止而玩家的最终目的是获得最好的宝物。
+
+ 
+
+请根据以上场景构建一个假想的Web游戏，可供多人在线上玩耍。界面尽可能简单（简单文字和链接即可，不需要style）。后台的数据库使用postgresql。对游戏玩家提供以下几种操作：寻宝（可以自动每天一次）、赚钱（可以自动每天一次）、佩戴宝物、浏览市场、买宝物、挂牌宝物、收回宝物。
+
+ 
+
+提交：程序+文档
+
+要求：
+
+\1.    文档主要用于解释你的数据库设计；画出ER图，从ER图衍生出关系模式；然后对关系模式进行优化，说明需要构建哪些索引，以及应用访问数据库的SQL指令。
+
+\2.    为玩家的操作设计JSON HTTP协议的接口，自定义接口格式（request和response的JSON）；为每个接口编写测试用例和测试代码。
+
+\3.    不限制编程语言及web框架。
+
+# 数据库结构设计
+
+## ER图
+
+![image-20191125012739412](https://github.com/1012598167/typora-user-images/raw/master/image-20191125012739412.png)
+
+
+
+## 设计逻辑
+
+数据库在设计时严格遵守3NF。保证了基本没有冗余。
+
+### users
+
+user包括每个玩家个人的属性，对user本人来说可读可操作。
+
+由于每次访问user的信息几乎必然从name开始查找，并且username唯一，用户的money,lucky,会随时发生改变（用户会随时去查看自己的wear，lucky属性），所以设计name为属性。而至于为什么以字符串的名字直接建键，是因为用户以输入username进行游戏操作，直接作为主键访问方便，表与表（与wear和pocket）的连接更自然，并且market表中seller可以直接显示出来给人看，或者说当玩家browse market时只需要直接无脑把market表输出就行 ，并且，既然是用户名而不是昵称，则不会过长。
+
+之后的money,lucky,workbase,passwd每个玩家就拥有一个，所以users表每多一个玩家多一条数据，故该表相对较小。
+
+lucky和workbase（工作能力基准）被加入到user，而不是每次travel或work时遍历wear表和pocket表，是因为wear和pocket表太大， 要遍历整个表代价太大，故那两张表基本只做插入删除操作不做查询操作。尽管这样增加了多次修改lucky和workbase的代价，但就没有以name作为主键的 wear表和pocket，并且wear和pocket比users多约3倍和10倍的数据，增加lucky和workbase相对较合适。
+
+而原本的passwd为了保密性新建了一个document，现与users合并 减少冗余。
+
+至于为什么不把wear和pocket放入user中，秉持之前设计的逻辑，首先所有数据完全**不允许出现NULL**![image-20191125015051053](https://github.com/1012598167/typora-user-images/raw/master/image-20191125015051053.png),显得干净不冗余，其次
+
+对于数量上限，由于在游戏初始时一般已确定好上限，如
+
+```python
+MAX_WEAR=2
+MAX_POCKET=10
+```
+
+不考虑体现在数据库中，而体现在对数据库的操作中。（如如果佩戴时已经有一个工具挂着，就顶掉换成新的，把旧的放回去），若以后游戏需要改动该值，则服务器更新时再去改（断掉运行的python），然后改动MAX_WEAR,MAX_POCKET（这里设计程序时全程没有假定MAX_WEAR和MAX_POCKET绝对不会变化，比如不是说一旦在有佩戴工具的时候再佩戴工具则直接顶掉，而是找所有佩戴工具中价值最低的顶掉。）
+
+由于可以修改大小，所以在users中建立wear1，wear2等显得过于冗余且意义不大。
+
+对money,lucky,workbase,passwd的增删改查都只需o(logn)效率较高。
+
+### wear与pocket
+
+将其抽出独立建表，是因为对m对n的关系考虑尽量多建一张表，对uid和tid的关系一目了然。至于num，原本mongodb若一个玩家有多个物品，就多加一个名字而不统计数量，而对sql不能有两行完全相同，故使用numbers统计数量，并且这样在计算某个物品数量时不需要遍历整个玩家拥有的treasure。由于一行uid tid num能完整确定一个wear关系，故以这三个属性作为主键。
+
+### market
+
+玩家可读可操作自由操作sell为自己的object或进行buy操作。由于有查看market操作，需要快速向玩家展示所有market中的信息，故组织成good ，price，sell，num格式。
+
+### treasure
+
+宝物库，玩家可读不可操作。仅仅可/会在更新服务器时更新该表，比如增加新模式等引入新treasure，或对影响游戏平衡的treasure进行修改。
+
+由name作为主键，因为大多操作都是通过name查看属性，只有寻宝等极少需要设计随机机制的操作需要以value为索引查找。
+
+property为配饰或者工具，value一般在0-100不等，作为treasure实际的在游戏中能担当多少价值的价值，而level则为给玩家看的大概的价值（{1:'普通',2:'稀有',3:'史诗',4:'传说',5:'限定'}），给value大体框定了一个范围（这样设计对玩家游戏体验有提升，而非冷冰冰的数字）。对于value，作为游戏设计者认定的宝物价值，决定了在工作时，你能获得大概多少的金币（获得金币的基准），这需要玩家对宝物自行去探索，并且对欧皇的价值观产生一些冲突以维护游戏平衡，当然，有了value，市场上的交易也会变得跟有可玩性。（level类似现实中的参考价，value类似市场参与者心目中的价格规范）。
+
+游戏中有一种特殊的宝物
+
+"name": '枭雄金印', 
+
+"property": "配饰",
+
+ "value": MAXINT,
+
+ "level": '终极'
+
+该配饰为游戏最终目标，类似2048的游戏获胜的条件（设计源头始于三国杀中六个神将碎片获得一个神将，玩家不能氪金获得，只能慢慢玩当真正打到高玩时才能得到），只能通过五个value为100的束发紫金冠获得，不能通过各种类似寻宝，市场交易等渠道获得，因为口袋中的工配饰上限限定为10，也需要玩家权衡一番有些东西是及时挂出还是等库满了主动换成钱（如2048这个方块，往往需要提前腾出大概连续的6-7个格子才能合除2048，但是总格子一共就16个，所以对玩家有一定的考验）。
+
+该宝物的获得渠道只能通过final操作（扣除五个束发紫金冠）合成，当然合成之后也可继续游玩，获取更高的目标（比如多个枭雄金印，类似合成4096/8192等，让玩家持续有新鲜和满足感，保留老玩家）。
+
+
+
+至于为什么treasure不分为工具和配饰两张表，因为不管当工作时需根据工作能力匹配相应宝物value的宝物，还是挂在market中，用户wear、pocket操作，所有宝物的地位都是平等的。加之运气值lucky和工作能力基准workbase会实时计算，故将其分为两个表完全没有必要。
+
+### 至于users的passwd
+
+玩家用户名密码的库，密码经过
+
+```python
+str(urllib.parse.quote(str(hashlib.md5(pwd.encode("utf-8")).digest()))))
+```
+
+多重加密，玩家和服务端都有公钥（用来验证密码是否正确），服务端也有密钥用来解密（digest）。
+
+会在用户注册时插入数据，用户登录时验证数据时访问。
+
+## 数据库现状一览
+
+由于我的写法每跑重复起一次服务器会删除历史游戏记录（create表会覆盖嘛），故记录数较少，不过pytest都测试了。
+
+### user
+
+![image-20191125013442759](https://github.com/1012598167/typora-user-images/raw/master/image-20191125013442759.png)
+
+### treasure
+
+![image-20191125005629796](https://github.com/1012598167/typora-user-images/raw/master/image-20191125005629796.png)
+
+越高等级宝物相对越少，且整体value呈右偏的尖峰后尾趋势。（至于为什么之后会解释）。
+
+### market
+
+![image-20191125013306048](https://github.com/1012598167/typora-user-images/raw/master/image-20191125013306048.png)
+
+对于大多商品定价玩家还是小心谨慎的，对于初级玩家定价可能只是考level是普通稀有还是史诗之类，但是高玩定价一般是通过自己佩戴上该工具或宝物而发现的能获得金币和探险拿到的钱的大概数量来的，对每个物品的价格有心理预期（即尽量靠近value），当然每个玩家会因自己对该宝物的需求度而改变价格期望。
+
+### pocket
+
+![image-20191125013619052](https://github.com/1012598167/typora-user-images/raw/master/image-20191125013619052.png)
+
+### wear
+
+![image-20191125013711681](https://github.com/1012598167/typora-user-images/raw/master/image-20191125013711681.png)
+
+# 游戏玩法及操作介绍
+
+## 游戏操作
+
+| 路由                                                         | 玩家mk2实际操作                                              | 备注                                                     |
+| :----------------------------------------------------------- | ------------------------------------------------------------ | -------------------------------------------------------- |
+| #工作 @bp.route("/<string:username>/work", methods=['GET'])#####工作能力直接由工具价值决定 | [ipv6]:5000/user/mk2/work                                    | 玩家工作可获得金币，一天一次，金币由工具决定             |
+| #寻宝 @bp.route("/<string:username>/travel", methods=['GET'])#####得到宝物的level由lucky值决定 | [ipv6]:5000/user/mk2/travel                                  | 玩家寻宝可获得宝物，一天一次，宝物价值由运气决定         |
+| #浏览市场 @bp.route("/<string:username>/browse", methods=['GET']) | [ipv6]:5000/user/mk2/browse                                  | 浏览市场                                                 |
+| #挂牌宝物 @bp.route("/<string:username>/sell/<string:treasure>/<int:price>", methods=['GET']) | [ipv6]:5000/user/mk2/sell/衠钢槊/20                          | 以某售价售出自己口袋中的宝物                             |
+| #买宝物 @bp.route("/<string:username>/buy/<string:treasure>/<int:price>/<string:sell>", methods=['GET']) | [ipv6]:5000/user/mk2/buy/衠钢槊/20/mk2                       | 购买市场上某人某价值的宝物                               |
+| #收回宝物 @bp.route("/<string:username>/back/<string:treasure>/<int:price>/<string:sell>", methods=['GET']) | [ipv6]:5000/user/mk2/back/衠钢槊/20/mk2                      | 收回自己挂在市场上的某价值的某宝物                       |
+| #获得枭雄金印 @bp.route("/<string:username>/final", methods=['GET']) | [ipv6]:5000/user/mk2/final                                   | 游戏胜利条件                                             |
+| #登录 @bp.route("/login", methods=['GET','POST'])            | [ipv6]:5000/user/login post:username pwd                     | post请求以登录                                           |
+| #查看用户名密码是否正确 @bp.route('/test')#/<string:username>/<string:pwd>') | 玩家不可访问                                                 | 验证密码是否正确及用户是否注册                           |
+| ##查看自己的某个属性 @bp.route("/<string:username>/see/<string:attr>", methods=['GET']) | [ipv6]:5000/user/mk2/see/pocket<br />[ipv6]:5000/user/mk2/see/lucky<br />[ipv6]:5000/user/mk2/see/onmarket<br />[ipv6]:5000/user/mk2/see/money | 查看个人某属性                                           |
+| ##查看宝物的某个属性@bp.route("/<string:username>/see/<string:treasure>/<string:attr>", methods=['GET']) | [ipv6]:5000/user/mk2/see/衠钢槊/level<br />[ipv6]:5000/user/mk2/see/衠钢槊/property<br /> | 查看宝物的某个属性                                       |
+| ##穿戴 @bp.route("/<string:username>/wear/<string:treasure>", methods=['GET']) | [ipv6]:5000/user/mk2/wear/衠钢槊                             | 佩戴宝物，其中佩戴工具可提升工作能力，佩戴配饰能提升运气 |
+| ##脱掉 @bp.route("/<string:username>/unwear/<string:treasure>", methods=['GET']) | [ipv6]:5000/user/mk2/unwear/衠钢槊/20/mk2                    | 卸下宝物                                                 |
+|                                                              |                                                              |                                                          |
+|                                                              |                                                              |                                                          |
+|                                                              |                                                              |                                                          |
+|                                                              |                                                              |                                                          |
+|                                                              |                                                              |                                                          |
+|                                                              |                                                              |                                                          |
+
+
+
+## 游戏玩法
+
+通过工作、寻宝、交易等手段，获取五个束发紫金冠，并换得枭雄金印。
+
+# 内部函数写法示例
+
+```python
+#!/usr/bin/env python3
+#如果宝物带满了就把最便宜的那个拆下来 不然不动
+def check_wear(username):
+    num1 = session2.query(func.sum(WEAR.num)).filter(POCKET.uid == username).all()
+    if num1[0][0]==MAX_WEAR:
+        thelist=session2.query(WEAR.tid).filter(WEAR.uid == username).all()#所有该用户的WEAR信息
+        values=[]
+        for i in range(MAX_WEAR):
+            values.append(ana(get_treasure(thelist[i].tid,'value')))
+        add_pocket(username, thelist[values.index(min(values))].tid)
+        un_wear(username, thelist[values.index(min(values))].tid)
+    return
+# 查看某用户佩戴中有无某宝物
+def find_wear(username,treasure):
+    isok = get_treasure(treasure)#判断是否存在该treasure
+    if ana(isok, 'ok'):
+        one = session2.query(WEAR).filter(WEAR.tid == treasure and WEAR.uid == username).first()
+        if one:
+            return {"result": '宝物佩戴着','one':one, "ok": 1}
+        else:
+            return {"result": '宝物没佩戴着', "ok": 0}
+    else:
+        return isok
+    # 撤回某用户佩戴中某宝物至口袋
+def un_wear(username,treasure):
+    isok=get_treasure(treasure,'property')#种类
+    if ana(isok,'ok'):
+        exist=find_wear(username,treasure)#判断user是否有该treasure
+        if ana(exist,'ok'):
+            gt =ana(isok)
+            if(gt=='配饰'):
+                ana(get_user(username,'lucky'),'one').lucky-=ana(get_treasure(treasure,'value'))
+            elif(gt=='工具'):
+                ana(get_user(username, 'workbase'), 'one').workbase -= ana(get_treasure(treasure, 'value'))*10
+            ana(exist,'one').num-=1
+            if(ana(exist, 'one').num ==0):
+                session2.delete(ana(exist, 'one'))
+            add_pocket(username, treasure)
+            return {"result": '佩戴中宝物数量-1', "ok": 1}
+        else:
+            return {"result": '佩戴中无该宝物，不能删除', "ok": 0}
+    else:
+        return isok
+   # 从某用户口袋中佩戴某宝物
+def add_wear(username,treasure):
+    isok=get_treasure(treasure,'property')#种类
+    if ana(isok,'ok'):
+        f = un_pocket(username, treasure)
+        if ana(f,'ok'):
+            exist=find_wear(username,treasure)
+            if ana(exist, 'ok'):
+                check_wear(username,treasure)
+                gt =ana(isok)
+                if(gt=='配饰'):
+                    ana(get_user(username,'lucky'),'one').lucky+=ana(get_treasure(treasure,'value'))
+                elif(gt=='工具'):
+                    ana(get_user(username, 'workbase'), 'one').workbase += ana(get_treasure(treasure, 'value'))*10
+                ana(exist,'one').num+=1
+
+            else:
+                wear1 = WEAR(uid=username, tid=treasure, num=1)
+                session2.add(wear1)
+            return {"result": '佩戴中宝物数量+1', "ok": 1}
+        else:
+            return f
+    else:
+        return isok
+    #lucky值为宝物value之和，在0-200之间，由于大多宝物value不高 所以寻宝不会很容易给找到好的 但是也必然有概率能爆到最好装备
+    #lucky值用来调整（或说决定）正态分布的期望
+```
+
+这是最先实现的几个函数，函数非常细化，包装得很大（但明显可以看出比mongodb简洁很多，因为orm可以直接对一条记录进行操作），坏处是对于一些底层函数设计就不够，游戏封得比较死（所以后来对底层也封了很多函数，比如给某个库什么位置插什么之类），好处是不管是路由写法、结构，以及测试都变得好写很多，之后若出错调试起来也可精确到一个函数去调试。
+
+之前mongodb的每个输出，都组织成jsonify({"result":, "ok": ，。。。。})的形式，哪怕是中间函数。这样，不管从哪个函数由返回，都可直接返回给用户操作是否合理及成功（ok），是否合理及成功的原因/操作后一些属性（result），以及执行操作后需要反馈给用户什么。或者说，中间函数的输出也可随时作为主要函数，甚至路由的输出。
+
+ok值即方便用户知道该操作合不合理，也方便开发者调试。
+
+坏处是
+
+```python
+def ana(response_,value='result'):
+    return eval(str(response_.data, encoding = "utf-8"))[value]
+```
+
+每次都要解析一下，牺牲了较多时间。
+
+这里对之前的操作进行了大幅度修改，将返回值组织成{"result": '佩戴中宝物数量+1', "ok": 1}字典的形式，避免了之前遇到的缺点，并保持了优点。
+
+由于这样的组织结构，对于单个路由，写法会变得特别简单。
+
+如购买宝物
+
+```python
+#买宝物
+@bp.route("/<string:username>/buy/<string:treasure>/<int:price>/<string:sell>", methods=['GET'])
+def buy_(username,treasure,price,sell):
+    if not session.get('username'):#没登录
+        return redirect('/user/login')
+    else:#登录
+        return jsonify(buy(username,treasure,price,sell))
+```
+
+而对所有玩家操作的处理（存在数据库的变动），一律封装到装函数的\_\_init\_\_.py中，使结构更加清晰，也不会引起jsonify与字典的混乱。
+
+# 遇到的问题
+
+## post请求跳转至get
+
+###  问题引入：
+
+唯一 URLs / 重定向行为
+
+Flask 的 URL 规则是基于 Werkzeug 的 routing 模块。该模块背后的思路是基于 Apache 和早期的 HTTP 服务器定下先例确保优雅和唯一的 URL。
+
+以这两个规则为例，在 hello.py 文件中添加如下的代码：
+
+@app.route('/projects/')
+ def projects():
+   return 'The project page'
+
+@app.route('/about')
+ def about():
+   return 'The about page'
+
+虽然它们看起来确实相似，但它们结尾斜线的使用在 URL 定义中不同。
+
+第一种情况中，规范的 URL 指向 projects 尾端有一个斜线/。这种感觉很像在文件系统中的文件夹。访问一个结尾不带斜线的 URL 会被 Flask 重定向到带斜线的规范 URL 去。当访问 http://127.0.0.1:5000/projects/ 时，页面会显示 The project page。
+
+然而，第二种情况的 URL 结尾不带斜线，类似 UNIX-like 系统下的文件的路径名。此时如果访问结尾带斜线的 URL 会产生一个404 “Not Found”错误。当访问 http://127.0.0.1:5000/about 时，页面会显示 The about page；但是当访问 http://127.0.0.1:5000/about/ 时，页面就会报错 Not Found。
+
+当用户访问页面忘记结尾斜线时，这个行为允许关联的 URL 继续工作，并且与 Apache 和其它的服务器的行为一致，反之则不行，因此在代码的 URL 设置时斜线只可多写不可少写；另外，URL 会保持唯一，有助于避免搜索引擎索引同一个页面两次。
+
+**所以在实验中先选用所有route后加上/的情况**
+
+```python
+@bp.route("/login/", methods=['GET','POST'])
+def login():
+    print(request.method)
+    print(request.path)
+    # if request.path == '/user/login':
+    #     return '重复跳转'
+    if request.method == 'POST':
+        username = request.form.get('username')
+        print(username)
+        pwd = request.form.get('pwd')
+        print(pwd)
+        session['username'] = username
+        return redirect('/user/test/{0}/{1}'.format(username,str(hashlib.md5(pwd.encode("utf-8")).digest()))) # 如果是 POST 方法就执行登录操作
+    elif request.method == 'GET':
+        return('PLEASE USE POST TO LOGIN!')   # 如果是 GET 方法就展示登录表单
+```
+
+可见route中写的是/login/
+
+遇到问题是
+
+![Figure 5](https://github.com/1012598167/typora-user-images/raw/master/1570937988007.png)
+
+该post请求会重定向至自己
+
+故通过命令行检查
+
+运行完app后执行测试文件
+
+```python
+import requests
+r = requests.post("http://127.0.0.1:5000/user/login", data={'username': 'mk', 'pwd': '1'})
+print(r.status_code)print(r.text)
+```
+
+结果
+
+![1570938127630](https://github.com/1012598167/typora-user-images/raw/master/1570938127630.png)
+
+![1570938134253](https://github.com/1012598167/typora-user-images/raw/master/1570938134253.png)
+
+发现进入了GET请求
+
+并且由
+
+127.0.0.1 - - [13/Oct/2019 11:42:01] "POST /user/login HTTP/1.1" 301 -
+127.0.0.1 - - [13/Oct/2019 11:42:01] "GET /user/login/ HTTP/1.1" 200 -
+
+发现其实是进入过POST请求不过是虚假进入
+
+结合Figure5，可知实际还是直接跳转到了/user/login/的GET请求（print出的GET在这两行之后）
+
+故新建两个文件尝试
+
+```python
+from flask import Flask, request,redirect
+
+app = Flask(__name__)
+
+
+@app.route('/')
+def hello_world():
+    return 'hello world'
+
+
+@app.route('/register', methods=['POST'])
+def register():
+    #     print request.headers
+    #     print request.form
+    #     print request.form['name']
+    #     print request.form.get('name')
+    #     print request.form.getlist('name')
+    #     print request.form.get('nickname', default='little apple')
+    if request.method == 'POST':
+        return 'POST'#redirect('/')
+    elif request.method == 'GET':
+        return 'GET'
+
+
+if __name__ == '__main__':
+    app.run()
+```
+
+```python
+import requests
+
+
+r = requests.post("http://127.0.0.1:5000/register", data={'username': 'mk', 'pwd': '1'})
+print(r.status_code)
+print(r.text)
+```
+
+发现输出正常
+
+127.0.0.1 - - [13/Oct/2019 11:41:01] "POST /register/ HTTP/1.1" 200 -
+
+```
+200
+
+'POST'
+```
+
+遂根据
+
+127.0.0.1 - - [13/Oct/2019 11:42:01] "POST /user/login HTTP/1.1" 301 -
+127.0.0.1 - - [13/Oct/2019 11:42:01] "GET /user/login/ HTTP/1.1" 200 -
+
+根据这两行网址的不同
+
+估计原因会有两种情况
+
+```python
+r = requests.post("http://127.0.0.1:5000/user/login", data={'username': 'mk', 'pwd': '1'})
+```
+
+应为
+
+```python
+r = requests.post("http://127.0.0.1:5000/user/login/", data={'username': 'mk', 'pwd': '1'})
+```
+
+或
+
+```python
+@bp.route("/login/", methods=['GET','POST'])
+```
+
+应为
+
+```python
+@bp.route("/login", methods=['GET','POST'])
+```
+
+后选择
+
+@bp.route("/login", methods=['GET','POST'])
+
+的方式，成功
+
+## 500 Internal Server Error
+
+![1570947182884](https://github.com/1012598167/typora-user-images/raw/master/1570947182884.png)
+
+![1570947366467](https://github.com/1012598167/typora-user-images/raw/master/1570947366467.png)
+
+说明代码有误
+
+##   server instance pool was destroyed 
+
+![1570956607155](https://github.com/1012598167/typora-user-images/raw/master/1570956607155.png)
+
+小则重启大则重装
+
+## 设计随机函数
+
+设计随机函数的时候 碰到一个极奇怪的事 经过调试。。。
+
+![1571068533198](https://github.com/1012598167/typora-user-images/raw/master/1571068533198.png)
+
+![image-20191029153329172](https://github.com/1012598167/typora-user-images/raw/master/image-20191029153329172.png)
+
+![1571068585185](https://github.com/1012598167/typora-user-images/raw/master/1571068585185.png)
+
+
+
+python支持连续比较。。所以需要加括号
+
+## sql的表名不能有大写
+
+![image-20191124192402599](https://github.com/1012598167/typora-user-images/raw/master/image-20191124192402599.png)
+
+若表名一旦出现大写会出现找不到该表的情况，是因为sql不区分大小写（所有大写识别为小写）。
+
+![image-20191124192646535](https://github.com/1012598167/typora-user-images/raw/master/image-20191124192646535.png)
+
+### 由于密码加密，密码会长于String(15)
+
+![image-20191125005242789](https://github.com/1012598167/typora-user-images/raw/master/image-20191125005242789.png)
+
+虽然改成String（100）存储容量变大，但是密码加密还是有必要的，以免用户非法访问数据库信息出现损失。
+
+### “Session” object does not support item assignment
+
+![image-20191125004542728](https://github.com/1012598167/typora-user-images/raw/master/image-20191125004542728.png)
+
+字面意思是session[xxx]不能被赋值，经过发现，由于flask存储的session库指定了名称为session，而sql创建session对象时
+
+```python
+# 创建session对象：
+session = DBSession() 
+```
+
+使用的的也是session故变量名冲突。解决的办法是将sql的session对象改名为session2。
+
+# 效果展示
+
+### 所有电脑都能玩这个游戏
+
+实现：
+
+1在别的电脑也能玩这个游戏（不需要在同一局域网内）
+
+2每个账号记录同步，但不会因为某一用户登录进去在别的电脑上可以不登录直接访问
+
+3支持多开，如QQ游戏一样
+
+注：使用ipv6的原因是我个人电脑所在区域连的校园网，那大家ipv4都一致的所以不能用
+
+实现：
+
+获得个人公网ip（ipv6）
+
+![1571486708857](https://github.com/1012598167/typora-user-images/raw/master/1571486708857.png)
+
+将flask改为可用公网ip（ipv6版本进行访问）![1571486751053](https://github.com/1012598167/typora-user-images/raw/master/1571486751053.png)
+
+注
+
+通过访问
+
+http://[2001:da8:8005:b104:c16e:f8a8:9567:d78f]:5000/user/login 登录并进行游戏。
+
+演示：
+
+在本地个人电脑上登录并创建新玩家ipv6，然后寻宝得到‘雌雄双股剑’。
+
+![1571485730505](https://github.com/1012598167/typora-user-images/raw/master/1571485730505.png)
+
+此时在别的电脑（别的同学的学校电脑）上直接进行ipv6用户的比如探险等操作，还是显示需要先登录。
+
+![1571486472520](https://github.com/1012598167/typora-user-images/raw/master/1571486472520.png)
+
+登陆进去后
+
+![1571486530274](https://github.com/1012598167/typora-user-images/raw/master/1571486530274.png)
+
+再次寻宝，获得方天画戟
+
+![1571486570310](https://github.com/1012598167/typora-user-images/raw/master/1571486570310.png)
+
+查看自己口袋，可以看到之前在另一台电脑上获得的‘雌雄双股剑’还在。
+
+![1571486604260](https://github.com/1012598167/typora-user-images/raw/master/1571486604260.png)
+
+由于‘一天’是由和flask框架同时并发的进程决定的，所以不会存在一边能寻宝/工作而另一端该玩家不能的情况。
+
+尚未实现：
+
+1把mongodb数据库部署到云端
+
+2未将所有代码部署到服务器，我这停掉就相当于服务器维护，玩家不能访问游戏内容
+
+3没把该网址换成自己的域名
+
+
+
+## 登录框架
+
+### session
+
+由于使用的是session，所以不会出现一旦登录进去，别的用户也可以访问你的用户名
+
+![1571484592287](https://github.com/1012598167/typora-user-images/raw/master/1571484592287.png)
+
+![1571484656903](https://github.com/1012598167/typora-user-images/raw/master/1571484656903.png)
+
+![1571484666785](https://github.com/1012598167/typora-user-images/raw/master/1571484666785.png)
+
+
+
+### 随机哈希密码
+
+```python
+app.config['SECRET_KEY'] = os.urandom(24)
+```
+
+```python
+return redirect('/user/test?username={0}&pwd={1}'.format(username,str(urllib.parse.quote(str(hashlib.md5(pwd.encode("utf-8")).digest()))))) # 如果是 POST 方法就执行登录操作
+```
+
+测试
+
+```
+import requestsr = requests.post("http://127.0.0.1:5000/user/login", data={'username': 'mk2', 'pwd': '1'})print(r.status_code)print(r.text)
+```
+
+![1570942516828](https://github.com/1012598167/typora-user-images/raw/master/1570942516828.png)
+
+`200`
+`{"cue":"新建玩家成功，您的初始配置为","lucky":0,"money":200,"name":"mk2","pocket":[],"treasure":{"A":"黄玉","T":"宝刀"},"wear":[]}`
+
+若同一用户再次执行（即把该代码再执行一遍）
+
+由于该玩家已经注册过 故显示
+
+`200`
+`登录成功,请进行游戏`
+
+若运行
+
+```python
+import requests
+
+
+r = requests.post("http://127.0.0.1:5000/user/login", data={'username': 'mk2', 'pwd': '2'})
+print(r.status_code)
+print(r.text)
+```
+
+
+
+即密码不对，则
+
+`200`
+`请重新login再post密码`
+
+若还未登录就进行游戏操作，则跳回登录页面的GET情况
+
+```python
+#查看是否登陆成功
+def islogin(username):
+    if not session.get('username'):
+        return redirect('/login')
+```
+
+`200`
+`'PLEASE USE POST TO LOGIN!'`
+
+
+
+## 随机模式
+
+**(sql设计与mongodb相同)**
+
+让爆率低，防止玩家一步登天**
+
+```python
+if ana(get_user(username,'wear'))['工具']:
+    base=sum(list(map(lambda x:ana(get_treasure(x,'value')),ana(get_user(username,'wear'))['工具'])))*10#基准
+    print(base)
+    money+=base+get_norm(username,-base/3,base/3,0.7)#钱增加工具价值+（-工具价值至工具价值)/3区间的服从正态分布的随机值
+    change_user(username,'money',money)
+```
+
+
+
+|          | 初始状态                                |
+| -------- | --------------------------------------- |
+| 工具     | 朱雀羽扇(value:15)                      |
+| 工作能力 | 15*10=150                               |
+| 饰品     | 护心镜                                  |
+| 运气     | 1(U(0,200)的0.5%分位数)                 |
+| 金币     | 200(初试化时，还未交易、工作、满口袋等) |
+
+|      | 工作后状态 |
+| ---- | ---------- |
+|      |            |
+| 金币 | 303        |
+|      |            |
+
+工作获得的金币数量上下限为工作能力 ± 工作能力/3,最终取值点由近似正态分布得到(正态分布均值由运气值在(0,200)中的相对位置决定)
+
+例：在初始化游戏时，金币为200，此时挂上了为‘普通’的配饰（烂银甲），运气增加了很少一点，即(0,200)中的7(烂银甲的value),此时正态分布的均值也只比最小值大一点(最小值为-工作能力,最大值为工作能力),而工作能力为佩戴的所有工具的value*10=150,此时工作得到的金币必然很接近工作能力-工作能力/3=150-150/3=100,事实结果为103
+
+![1571073837411](https://github.com/1012598167/typora-user-images/raw/master/1571073837411.png)
+
+在相同工作能力及低运气下继续工作，获得金币为104
+
+![1571075103154](https://github.com/1012598167/typora-user-images/raw/master/1571075103154.png)
+
+这样开始时由于装备很难获得好的，并且每次玩家签到(工作和寻宝)得到的奖励都不会很好,所以若玩家坚持签到的确可以让口袋越来越满从而换钱，但是却几乎不可能爆出好的宝物，所以玩家必须通过交易（钱从工作得到）来使自己的工具或者配饰提升，从而为更好的游戏体验（好的宝物）而努力，以达成最终目标，获得只能通过束发紫金冠兑换而得到的枭雄金印。
+
+
+
+又例：
+
+![1571467330095](https://github.com/1012598167/typora-user-images/raw/master/1571467330095.png)
+
+![1571467275699](https://github.com/1012598167/typora-user-images/raw/master/1571467275699.png)
+
+由于配饰好运气值高获得并穿戴史诗道具
+
+![1571467398969](https://github.com/1012598167/typora-user-images/raw/master/1571467398969.png)
+
+工作时获得金币明显增多：
+
+![1571467411532](https://github.com/1012598167/typora-user-images/raw/master/1571467411532.png)
+
+但是由于之前的随机机制：
+
+![1571467465893](https://github.com/1012598167/typora-user-images/raw/master/1571467465893.png)
+
+之前那样爆到史诗概率不高。
+
+ps：在设计宝物时，将低等级（如普通）的宝物设计得相对多一点，这样在玩家开始游戏时会获得相对好的体验。
+
+并且到了后期
+
+![1571467905586](https://github.com/1012598167/typora-user-images/raw/master/1571467905586.png)
+
+你的工具会变得很多，而配饰会相对较少而且等级相对较低（因为高等级工具相对多于高等级配饰），这样玩家运气不会很容易提升（等级高了之后），所以基本需要靠后期去市场购买好的配饰等来提升自己的运气（通过需要你去购买以及工具相对配饰多的事实来敦促你每天工作），而不会像一些游戏每次签到（工作）都获得相对较差的宝物而导致玩家不屑签到（工作）。
+
+## check机制 pocket或者wear满了之后
+
+**(sql设计与mongodb相同)**
+
+![1571466038828](https://github.com/1012598167/typora-user-images/raw/master/1571466038828.png)
+
+可以看到在现在状态下 wear的工具数量已经达到了MAX_GJ=1,在下一次wear pocket的工具衠钢槊时，会先将穿戴的工具栏中的最便宜的物品（即衠钢槊）弹回给pocket，然后再wear pocket中原来那个衠钢槊，效果如下：
+
+![1571466193657](https://github.com/1012598167/typora-user-images/raw/master/1571466193657.png)
+
+同样地，如果pocket满了之后，比如通过寻宝 travel又获得了新的工具，也会将最便宜的工具顶掉。
+
+![1571469047375](https://github.com/1012598167/typora-user-images/raw/master/1571469047375.png)
+
+## 对各种特殊情况都有考虑
+
+如玩家乱滚键盘输错内容，市场库里没这东西等等。详情可见代码。
+
+这一块是重点考虑的，虽然花时间多，但由于是后端维护方面的，所以展示请自己游戏时看到操作考虑的周全性。说不完的。
+
+## 访问路由效果举例
+
+### mk2想购买mk的朱雀羽扇
+
+先登录
+
+![1571564861616](https://github.com/1012598167/typora-user-images/raw/master/1571564861616.png)
+
+看自己钱
+
+![1571564835770](https://github.com/1012598167/typora-user-images/raw/master/1571564835770.png)
+
+看市场
+
+![1571564899421](https://github.com/1012598167/typora-user-images/raw/master/1571564899421.png)
+
+钱够，看背包
+
+![1571564971394](https://github.com/1012598167/typora-user-images/raw/master/1571564971394.png)
+
+想买mk的朱雀羽扇
+
+![1571565146119](https://github.com/1012598167/typora-user-images/raw/master/1571565146119.png)
+
+![1571565154260](https://github.com/1012598167/typora-user-images/raw/master/1571565154260.png)
+
+（会返回给mk2市场上有什么，现在自己有什么，钱的变化等）
+
+再看市场：
+
+![1571565234836](https://github.com/1012598167/typora-user-images/raw/master/1571565234836.png)
+
+看自己包：
+
+![1571565224144](https://github.com/1012598167/typora-user-images/raw/master/1571565224144.png)
+
+看自己钱：
+
+![1571565246073](https://github.com/1012598167/typora-user-images/raw/master/1571565246073.png)
+
+**与此同时mk2，也在玩，信息的变化：**
+
+前钱：
+
+![1571565020769](https://github.com/1012598167/typora-user-images/raw/master/1571565020769.png)
+
+onmarket：
+
+![1571565036086](https://github.com/1012598167/typora-user-images/raw/master/1571565036086.png)
+
+后钱：
+
+![1571565274463](https://github.com/1012598167/typora-user-images/raw/master/1571565274463.png)
+
+后onmarket：
+
+![1571565289251](https://github.com/1012598167/typora-user-images/raw/master/1571565289251.png)
+
+所有输错都会有显示![1571565299413](https://github.com/1012598167/typora-user-images/raw/master/1571565299413.png)
+
+# 进一步优化输出
+
+**伪前端，给用户最好的反馈**
+
+调试至无bug后，尽量优化玩家体验，每次遇到ok=0时不仅要解释清楚原因，还要展示可能是因为玩家不知某些信息而导致错误操作的这些信息，遇到ok=1时，也要告知玩家哪些属性发生了变化，以进一步操作。
+
+举例：
+
+1. 比如若market无该商品记录
+
+```python
+#看市场上到底有没有这条记录
+def check_market_full(goods,price,sell):
+    the_find=session2.query(MARKET).filter(MARKET.seller==sell and MARKET.tid==goods and MARKET.price==price).first()
+    if not the_find:
+        return {"result":"market无该商品记录","market":list(get_market()),'one':the_find,"ok": 0}
+    else:
+        return {"result":"market有该商品记录","market":list(get_market()),'one':the_find,"ok": 1}#返回最便宜的那条的id（不设计此功能了 因为会有玩家专门挑贵的买）
+# 给market加一条信息
+def add_market(goods,price,sell):
+    one=check_market_full(goods,price,sell)
+    if ana(one,'ok'):
+        ana(one,'one').num+=1
+    else:
+        market1=MARKET(seller=sell,tid=goods,price=price,num=1)
+        session2.add(market1)
+    return {"result":'插入成功',"ok": 1}
+
+```
+
+```
+{"result":"market无该商品记录","market":用户可访问的当前市场信息,"ok": 0}
+```
+
+的反馈。
+
+效果：
+
+2. 工作前后金币数量
+
+   ```python
+   @bp.route("/<string:username>/work", methods=['GET'])#####工作能力直接由工具价值决定
+   def work(username):
+       ####
+       return jsonify({'result':'原来有钱{0},现在有钱{1}'.format(money0,money),'ok':1})
+   ####
+   ```
+
+告知玩家工作前后的钱的数量。
+
+效果：
+
+另外：用户当然也需要能随时了解到自己的属性如money,pocket,lucky,wear,onmarket等（尤其是onmarket,可以快速了解到自己有什么物品挂在市场上）
+
+```python
+##查看自己的某个属性@bp.route("/<string:username>/see/<string:attr>", methods=['GET'])
+```
+
+![1571466915090](https://github.com/1012598167/typora-user-images/raw/master/1571466915090.png)
+
+并且玩家也需要及时知道一个宝物的property,value,level等
+
+```python
+##查看宝物的某个属性
+@bp.route("/<string:username>/see/<string:treasure>/<string:attr>", methods=['GET'])
+```
+
+
+
+# 测试文件和覆盖率
+
+由于pytest需要每一次获取新的client
+
+```python
+def client():
+    app: Flask = Flask(__name__)
+    app.config['SECRET_KEY'] = os.urandom(24)
+    app.register_blueprint(bp)
+    client= app.test_client()
+    return client
+```
+
+故无法保存cookies，同样的道理 若使用类似live_server
+
+If you want your tests done via Selenium or other headless browser use the `live_server` fixture. The server’s URL can be retrieved using the `url_for` function:
+
+```python
+from flask import url_for
+
+@pytest.mark.usefixtures('live_server')
+class TestLiveServer:
+
+    def test_server_is_up_and_running(self):
+        res = urllib2.urlopen(url_for('index', _external=True))
+        assert b'OK' in res.read()
+        assert res.code == 200
+```
+
+也不便于获得存好cookies的requests更不用说urllib2需要用LWPcooiejar。
+
+所以先解析一下post请求
+
+![1571512706343](https://github.com/1012598167/typora-user-images/raw/master/1571512706343.png)
+
+post中有Headers是Cookie 拿出来
+
+![1571515456701](https://github.com/1012598167/typora-user-images/raw/master/1571515456701.png)
+
+可以看到它并没有保存cookie这个header，因为test_client是忽略所有与session有关的操作的，client= app.test_client(use_cookies=True)也没用
+
+![1571515471666](https://github.com/1012598167/typora-user-images/raw/master/1571515471666.png)
+
+这里也能看大含有cookie的post可能是postman自己生成的，所以测试没法维持绘画。
+
+所以尝试使用with app.test_client() as t:结构，在该结构中
+
+```python
+flask.session['foo'] == 42
+```
+
+这样的session操作以及
+
+```python
+assert request.args['tequila'] == '42'
+```
+
+这样的request操作
+
+是允许使用的。
+
+原本为pytest专门建一个sessiondb数据库，去拿到我要的session
+
+（全局字典），由于前述原因，故放弃通过建立sessiondb去多文件传递session并且每次post的时候给app添加一个cookies。
+
+所以现在的测试结构（能考虑session）为
+
+```python
+app: Flask = Flask(__name__)
+app.config['SECRET_KEY'] = os.urandom(24)
+app.register_blueprint(bp)
+# def client:
+#     app: Flask = Flask(__name__)
+#     app.config['SECRET_KEY'] = os.urandom(24)
+#     app.register_blueprint(bp)
+#     client= app.test_client(use_cookies=True)
+#     return client
+with app.test_client(use_cookies=True) as client:
+```
+
+
+
+基本通过ok返回的值测试覆盖率，操作有误便assert json["ok"]==0，else assert json["ok"]==1
+
+在命令行中键入t执行脚本，运行pytest
+
+![1571555092736](https://github.com/1012598167/typora-user-images/raw/master/1571555092736.png)
+
+运行脚本c测试覆盖率
+
+![1571555234439](https://github.com/1012598167/typora-user-images/raw/master/1571555234439.png)
+
+
+
+
+
+如：
+
+1. 对每个操作
+
+```python
+    if not session.get('username'):
+        return redirect('/user/login')
+    else:
+        return func(username)
+```
+
+都先进行检查有没有登录，若没有登录则跳回到原始登录界面
+
+(在工作中已经test过 不再反复test)
+
+2. 对于check宝物有没有满（这些功能在之前已经手动测试过，故不需再在测试中测试）
+
+```python
+#如果pocket满了就把最便宜的那个先换成钱 然后丢掉 不然不动
+def check_pocket(username):
+    num1 = session2.query(func.sum(POCKET.num)).filter(POCKET.uid == username).all()
+    if num1[0][0]==MAX_POCKET:
+        thelist=session2.query(POCKET.tid).filter(POCKET.uid == username).all()#所有该用户的POCKET信息
+        values=[]
+        for i in range(MAX_POCKET):
+            values.append(ana(get_treasure(thelist[i].tid,'value')))
+        ana(get_user(username, 'money'),'one').money+=ana(get_treasure(thelist[values.index(min(values))].tid, 'value')) * 10
+        un_pocket(username,thelist[values.index(min(values))].tid)
+    return
+
+#如果宝物带满了就把最便宜的那个拆下来 不然不动
+def check_wear(username):
+    num1 = session2.query(func.sum(WEAR.num)).filter(POCKET.uid == username).all()
+    if num1[0][0]==MAX_WEAR:
+        thelist=session2.query(WEAR.tid).filter(WEAR.uid == username).all()#所有该用户的WEAR信息
+        values=[]
+        for i in range(MAX_WEAR):
+            values.append(ana(get_treasure(thelist[i].tid,'value')))
+        add_pocket(username, thelist[values.index(min(values))].tid)
+        un_wear(username, thelist[values.index(min(values))].tid)
+    return
+```
+
+3. 在每个函数中都有考虑一些玩家滚键盘的情况，比如瞎输入要查看的东西等等，这种一般没有另行去test。
+
+所以导致最终覆盖率大约在80%。
+
+
+
+# 补充
+
+之前的mongodb游戏已经可以联机并且数据库上云了，但是postgresql上云需要钱，所以就没上。
+
+由于今天一直在跑模型，所以电脑特别卡。。导致迟交了一会，望理解。
+
+![image-20191125012643554](https://github.com/1012598167/typora-user-images/raw/master/image-20191125012643554.png)
+
+![image-20191125012559825](https://github.com/1012598167/typora-user-images/raw/master/image-20191125012559825.png)
+
+
+
+# 上次作业更新
+
+## 2019/10/29
+
+### 图床链接更新
+
+github的图全挂了？？
+
+诶 被那个xx的360断网急救箱清空host了。。
+
+看下控制台有没有报错，我去还真就有。
+
+![image-20191029150837477](https://github.com/1012598167/typora-user-images/raw/master/image-20191029150837477.png)
+
+之后通过 [IPAddress.com](https://www.ipaddress.com/) 查看那些崩的图片的链接的ip，并修改host。
+
+![image-20191029151954253](https://github.com/1012598167/typora-user-images/raw/master/image-20191029151954253.png)
+
+![image-20191029152101445](https://github.com/1012598167/typora-user-images/raw/master/image-20191029152101445.png)
+
+可以看到图片都回来了
+
+### 数据库联机
+
+**利用mongodb atlas将数据库联机。**
+
+首先进入monogb atlas 并创建cluster，名为flaskgame。
+
+![image-20191029143925743](https://github.com/1012598167/typora-user-images/raw/master/image-20191029143925743.png)
+
+备注我的mongodb user的username为mathskiller 密码10位数 最后一位为*（给自己看的 ）
+
+以下为进入之后的窗口
+
+![image-20191029144049978](https://github.com/1012598167/typora-user-images/raw/master/image-20191029144049978.png)
+
+之后在Network Assess中加入自己ip （可以看见ipv6没得加 那就不加呗）
+
+![image-20191029144144359](https://github.com/1012598167/typora-user-images/raw/master/image-20191029144144359.png)
+
+通过点击connect查看连接mongodb compass的方式
+
+![image-20191029144323920](https://github.com/1012598167/typora-user-images/raw/master/image-20191029144323920.png)
+
+为
+
+mongodb+srv://mathskiller:\*\*\*\*\*\*\*\*\*Q@flaskgame-aoyhi.mongodb.net/test
+
+将该段复制进compass
+
+![image-20191029153039524](https://github.com/1012598167/typora-user-images/raw/master/image-20191029153039524.png) 
+
+连接成功（如果出现auth error说明密码不对）
+
+接着将localhost的数据库导入至该数据库
+
+利用mongo dump导出至默认文件夹C:\Users\chenn\dump
+
+直接用mongodump命令就行 以下命令为导出指定数据库至指定路径
+
+![image-20191029144554101](https://github.com/1012598167/typora-user-images/raw/master/image-20191029144554101.png)
+
+再利用查到的mongodb atlas如何import（方式如下）
+
+![image-20191029144737791](https://github.com/1012598167/typora-user-images/raw/master/image-20191029144737791.png)
+
+将本地默认位置的数据迁移至该数据库
+
+mongorestore --host flaskgame-shard-0/flaskgame-shard-00-00-aoyhi.mongodb.net:27017,flaskgame-shard-00-01-aoyhi.mongodb.net:27017,flaskgame-shard-00-02-aoyhi.mongodb.net:27017 --ssl --username mathskiller --password \*\*\*\*\*\*\*\*\*Q --authenticationDatabase admin
+
+![image-20191029144801477](https://github.com/1012598167/typora-user-images/raw/master/image-20191029144801477.png)
+
+若碰到sasl conversation error，说明
+
+1密码输错
+
+2authentication权限没给对，可见上图。
+
+重新连接发现数据都来了
+
+![image-20191029144821863](https://github.com/1012598167/typora-user-images/raw/master/image-20191029144821863.png)
+
+然后用这去连pymongo
+
+![image-20191029145213793](https://github.com/1012598167/typora-user-images/raw/master/image-20191029145213793.png)
+
+将所有原来的连的操作改成这个并 sudo pip install dnspython 
+
+![image-20191029145903989](https://github.com/1012598167/typora-user-images/raw/master/image-20191029145903989.png)
+
+运行成功，可以正常游戏
+
+![image-20191029150048840](https://github.com/1012598167/typora-user-images/raw/master/image-20191029150048840.png)
+
+![image-20191029150155691](https://github.com/1012598167/typora-user-images/raw/master/image-20191029150155691.png)
+
+同样地 把它换成本地ipv6，所有电脑都能玩了。
+
+![image-20191029152816816](https://github.com/1012598167/typora-user-images/raw/master/image-20191029152816816.png)
