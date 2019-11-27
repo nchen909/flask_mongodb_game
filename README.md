@@ -34,4 +34,6 @@ postgresql
 
 运行说明在[README.md](https://github.com/1012598167/flask_mongodb_game/blob/master/homework2/json_interface_example/README.md "\homework2\json_interface_example\README.md")
 
+sql及之后所有实验报告位于[见该链接文件夹下的那些“实验报告.md”](https://github.com/1012598167/flask_mongodb_game/tree/master/Database-master)
+
 别的都是没用的
