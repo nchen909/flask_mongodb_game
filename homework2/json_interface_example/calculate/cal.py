@@ -133,9 +133,10 @@ def final_(username):
         return redirect('/user/login')
     else:
         return final(username)
+
 #登录
 @bp.route("/login", methods=['GET','POST'])
-def login():
+def login2():
     print(request.method)
     print(request.path)
     # if request.path == '/user/login':
