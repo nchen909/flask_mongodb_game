@@ -135,6 +135,7 @@ def final_(username):
         return final(username)
 
 #登录
+####
 @bp.route("/login", methods=['GET','POST'])
 def login2():
     print(request.method)
