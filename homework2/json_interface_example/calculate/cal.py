@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-
+# coding:utf-8
 from flask import Blueprint
 from flask import jsonify
 from flask import request
-from flask import redirect,session
+from flask import redirect,session,render_template
 import sys
 from pymongo import MongoClient
 from pymongo.errors import DuplicateKeyError
@@ -46,9 +46,10 @@ timer.start()
 @bp.route("/<string:username>/work", methods=['GET'])#####工作能力直接由工具价值决定
 def work(username):
     global work_flag
-    #print('username' in session)
-    print(session.get('username'))
-    if not session.get('username'):
+    # print('username' in session)
+    print(session.get('username')=='mk')
+    # print(session.get('username')=='mk2')
+    if session.get('username')!=username:
         return redirect('/user/login')
     else:
         if (work_flag==1):
@@ -62,14 +63,14 @@ def work(username):
                 change_user(username,'money',money)
             else:
                 pass#不挂工具拿不到钱
-            return jsonify({'result':'原来有钱{0},现在有钱{1}'.format(money0,money),'ok':1})
+            return render_template('operation.html',username=username,result={'result':'原来有钱{0},现在有钱{1}'.format(money0,money),'ok':1})
         else:
-            return jsonify({'result':'您今天已经工作过','ok':0})
+            return render_template('operation.html',username=username,result={'result':'您今天已经工作过','ok':0})
 #寻宝
 @bp.route("/<string:username>/travel", methods=['GET'])#####得到宝物的level由lucky值决定
 def travel(username):
     global travel_flag
-    if not session.get('username'):
+    if session.get('username')!=username:
         return redirect('/user/login')
     else:
         if (travel_flag==1):
@@ -95,49 +96,56 @@ def travel(username):
             else:#配饰
                 whatget = choice([x for x in treasures.find({'property': '配饰', 'level':map_[level_num] })])['name']
                 add_pocket(username,whatget)
-            return jsonify({'result':whatget,'level': map_[level_num],'ok':1})
+            return render_template('operation.html',username=username,result={'result':whatget,'level': map_[level_num],'ok':1})
         else:
-            return jsonify({'result':'您今天已经寻宝过','ok':0})
+            return render_template('operation.html',username=username,result={'result':'您今天已经寻宝过','ok':0})
 #浏览市场
 @bp.route("/<string:username>/browse", methods=['GET'])
 def browse(username):
-    if not session.get('username'):
+    if session.get('username')!=username:
         return redirect('/user/login')
     else:
-        return jsonify({'result':list(get_market()),'ok':1})
+        return render_template('operation.html',username=username,result={'result':list(get_market()),'ok':1})
 #挂牌宝物
-@bp.route("/<string:username>/sell/<string:treasure>/<int:price>", methods=['GET'])
-def sell_(username,treasure,price):
-    if not session.get('username'):
+@bp.route("/<string:username>/sell", methods=['POST'])
+def sell_(username):
+    treasure=request.form.get('treasure')
+    price = request.form.get('price')
+    if session.get('username')!=username:
         return redirect('/user/login')
     else:
-        return sell(username,treasure,price)
+        return render_template('operation.html',username=username,result=ana2(sell(username,treasure,price)))
 #买宝物
-@bp.route("/<string:username>/buy/<string:treasure>/<int:price>/<string:sell>", methods=['GET'])
-def buy_(username,treasure,price,sell):
-    if not session.get('username'):
+@bp.route("/<string:username>/buy", methods=['POST'])
+def buy_(username):
+    treasure = request.form.get('treasure')
+    price = request.form.get('price')
+    sell=request.form.get('sell')
+    if session.get('username')!=username:
         return redirect('/user/login')
     else:
-        return buy(username,treasure,price,sell)
+        return render_template('operation.html',username=username,result=ana2(buy(username,treasure,price,sell)))
 #收回宝物
-@bp.route("/<string:username>/back/<string:treasure>/<int:price>/<string:sell>", methods=['GET'])
-def back_(username,treasure,price,sell):
-    if not session.get('username'):
+@bp.route("/<string:username>/back", methods=['POST'])
+def back_(username):
+    treasure = request.form.get('treasure')
+    price = request.form.get('price')
+    sell=request.form.get('sell')
+    if session.get('username')!=username:
         return redirect('/user/login')
     else:
-        return back(username,treasure,price,sell)
+        return render_template('operation.html',username=username,result=ana2(back(username,treasure,price,sell)))
 #获得枭雄金印
 @bp.route("/<string:username>/final", methods=['GET'])
 def final_(username):
-    if not session.get('username'):
+    if session.get('username')!=username:
         return redirect('/user/login')
     else:
-        return final(username)
+        return render_template('operation.html',username=username,result=ana2(final(username)))
 
 #登录
-####
 @bp.route("/login", methods=['GET','POST'])
-def login2():
+def login():
     print(request.method)
     print(request.path)
     # if request.path == '/user/login':
@@ -147,14 +155,15 @@ def login2():
         print(username)
         pwd = request.form.get('pwd')
         session['username'] = username
-        print(request.cookies.get('session'))
+        print('POSTgetsession:   ',request.cookies.get('session'))
         # if sessiondb.find_one({'username':username}):
         #     sessiondb.delete_one({'username':username})
         # sessiondb.insert_one({'username':username,'session':request.cookies.get('session')})
-        #print(session.get('username'))
+        print('POSTgetusername:   ',session.get('username'))
         return redirect('/user/test?username={0}&pwd={1}'.format(username,str(urllib.parse.quote(str(hashlib.md5(pwd.encode("utf-8")).digest()))))) # 如果是 POST 方法就执行登录操作
     elif request.method == 'GET':
-        return('PLEASE USE POST TO LOGIN!')   # 如果是 GET 方法就展示登录表单
+        print('GETgetusername:   ',session.get('username'))
+        return render_template('login.html')   # 如果是 GET 方法就展示登录表单
 
 ###########################写pytest时发现 如果是这么写 return就返回一个303的界面不走下去
 ###########################所以如果redirect的界面人访问不到 那就是
@@ -167,48 +176,52 @@ def index():
 
     username = request.args.get('username')
     pwd = request.args.get('pwd')
-    print(pwd)
+    print('/test pwd:',pwd)
     try:
         info.insert_one({'username':username,'pwd':pwd})
 
     except DuplicateKeyError:
         if (info.find_one({ "username": username,'pwd':pwd })):#以name建立索引找起来就快
-            return jsonify({"result":"登录成功,请进行游戏","ok":1})
+            return render_template('loginskip.html',username=username,pwd=pwd,result={"result":"登录成功,请进行游戏","ok":1})
         else:
-            return jsonify({"result":"密码错误，请重新login再post密码","ok":0})
+            return render_template('login.html',result={"result":"密码错误，请重新login再post密码","ok":0})
     else:
         user.insert_one({"name": username, "money": 200,
                          "pocket": {"工具": ["衠钢槊"], "配饰": ["烂银甲"]}
                             ,'lucky':0,'wear':{"工具": [], "配饰": []},
                          'onmarket':{"工具": [], "配饰": []}})
-        return jsonify({"result":"新建玩家成功，您的初始配置为","name": username, "money": 200,
+        return render_template('loginskip.html',username=username,pwd=pwd,result={"result":"新建玩家成功，您的初始配置为","name": username, "money": 200,
                          "pocket": {"工具": ["衠钢槊"], "配饰": ["烂银甲"]}
                             ,'lucky':0,'wear':{"工具": [], "配饰": []},
                         'onmarket':{"工具": [], "配饰": []}})
 
 ##查看自己的某个属性
-@bp.route("/<string:username>/see/<string:attr>", methods=['GET'])
-def attr_(username,attr):
-    if not session.get('username'):
-        return redirect('/user/login')
+@bp.route("/<string:username>/see", methods=['POST'])
+def attr_(username):
+    treasure=request.form.get('treasure')
+    attr = request.form.get('attr')
+    print(treasure)
+    print(attr)
+    if not treasure:
+        if session.get('username')!=username:
+            return redirect('/user/login')
+        else:
+            return render_template('operation.html',username=username,result=ana2(get_user(username,attr)))
     else:
-        return get_user(username,attr)
+        if session.get('username') != username:
+            return redirect('/user/login')
+        else:
+            return render_template('operation.html',username=username,result=ana2(get_treasure(treasure, attr)))
 
-##查看宝物的某个属性
-@bp.route("/<string:username>/see/<string:treasure>/<string:attr>", methods=['GET'])
-def see_attr_(username,treasure,attr):
-    if not session.get('username'):
-        return redirect('/user/login')
-    else:
-        return get_treasure(treasure,attr)
 
 ##穿戴
-@bp.route("/<string:username>/wear/<string:treasure>", methods=['GET'])
-def wear(username,treasure):
-    if not session.get('username'):
+@bp.route("/<string:username>/wear", methods=['POST'])
+def wear(username):
+    treasure = request.form.get('treasure')
+    if session.get('username')!=username:
         return redirect('/user/login')
     else:
-        return add_wear(username,treasure)
+        return render_template('operation.html',username=username,result=ana2(add_wear(username,treasure)))
     #print(session.get('username'))
     #return find_pocket(username,treasure)
 
@@ -227,13 +240,18 @@ def wear(username,treasure):
     #     return redirect('/user/login')
 
 ##脱掉
-@bp.route("/<string:username>/unwear/<string:treasure>", methods=['GET'])
-def unwear(username,treasure):
-    if not session.get('username'):
+@bp.route("/<string:username>/unwear", methods=['POST'])
+def unwear(username):
+    treasure = request.form.get('treasure')
+    if session.get('username')!=username:
         return redirect('/user/login')
     else:
-        return un_wear(username,treasure)
+        return render_template('operation.html',username=username,result=ana2(un_wear(username,treasure)))
 
+##游戏操作界面
+@bp.route("/operation/<string:username>", methods=['GET'])
+def operation(username):
+    return render_template('operation.html',username=username)
 
 # @bp.route("/<string:username>/buy/<string:treasure>", methods=['GET'])
 #     # def buy(username, treasure):

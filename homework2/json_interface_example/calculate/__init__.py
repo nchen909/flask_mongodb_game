@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# coding:utf-8
 #连接数据库
 from pymongo import ASCENDING
 from pymongo import MongoClient

@@ -1,0 +1,30 @@
+ * Serving Flask app "main" (lazy loading)
+ * Environment: production
+   WARNING: This is a development server. Do not use it in a production deployment.
+   Use a production WSGI server instead.
+ * Debug mode: on
+Traceback (most recent call last):
+  File "main.py", line 113, in <module>
+    app.run(debug=True,host='10.24.5.57',port=5000)
+  File "/usr/lib64/python2.7/site-packages/flask/app.py", line 990, in run
+    run_simple(host, port, self, **options)
+  File "/usr/lib64/python2.7/site-packages/werkzeug/serving.py", line 988, in run_simple
+    s.bind(server_address)
+  File "/usr/lib64/python2.7/socket.py", line 224, in meth
+    return getattr(self._sock,name)(*args)
+socket.error: [Errno 98] Address already in use
+ * Serving Flask app "main" (lazy loading)
+ * Environment: production
+   WARNING: This is a development server. Do not use it in a production deployment.
+   Use a production WSGI server instead.
+ * Debug mode: on
+Traceback (most recent call last):
+  File "main.py", line 113, in <module>
+    app.run(debug=True,host='10.24.5.57',port=5000)
+  File "/usr/lib64/python2.7/site-packages/flask/app.py", line 990, in run
+    run_simple(host, port, self, **options)
+  File "/usr/lib64/python2.7/site-packages/werkzeug/serving.py", line 988, in run_simple
+    s.bind(server_address)
+  File "/usr/lib64/python2.7/socket.py", line 224, in meth
+    return getattr(self._sock,name)(*args)
+socket.error: [Errno 98] Address already in use

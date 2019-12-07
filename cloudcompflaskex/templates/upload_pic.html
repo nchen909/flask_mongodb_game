@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+    <body>
+        <div>
+            <form method="post" action="http://10.24.5.57:5000/up_photo" enctype="multipart/form-data">
+            <input type="file" size="30" name="photo"/>
+            <br>
+            <input type="text" class="txt_input" name="name" style="margin-top:15px;"/>
+            <input type="submit" value="提交信息" class="button-new" style="margin-top:15px;"/>
+            </form>
+        </div>
+        
+        <div>
+            <div >
+                <h1>执行命令</h1>
+                <form id="command_form" method="POST" action="http://10.24.5.57:5000/cmd">
+                    <div>
+                        <input name="cmd" type="text" placeholder="命令" value="{{ cmd }}">
+                        <span>@</span>
+                        <input name="ip" type="text"placeholder="IP" value="{{ ip }}">
+                        <span>
+                            <input name="submit"type="submit" value="执行" />
+                        </span>
+                    </div>
+                </form>
+            </div>
+            <div id="result">
+                <h3>命令结果</h3>
+                <textarea rows="20" cols="100">
+                    {% if result %}
+                        {{ result }}
+                    {% endif %}
+                </textarea>
+            </div>
+        </div>
+</html>

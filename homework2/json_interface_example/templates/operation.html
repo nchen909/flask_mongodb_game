@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login</title>
+</head>
+    <body>
+        <div>
+            <h1>玩家{{ username }}</h1>
+        </div>
+        <div>
+            <form method="get" action="http://[fe80::c16e:f8a8:9567:d78f]:5000/user/{{ username }}/work" enctype="multipart/form-data">
+            <input type="submit" value="工作" class="button-new" style="margin-top:15px;"/>
+            </form>
+            <br>
+        </div>
+        <div>
+            <form method="get" action="http://[fe80::c16e:f8a8:9567:d78f]:5000/user/{{ username }}/travel" enctype="multipart/form-data">
+            <input type="submit" value="寻宝" class="button-new" style="margin-top:15px;"/>
+            </form>
+            <br>
+        </div>
+        <div>
+            <form method="get" action="http://[fe80::c16e:f8a8:9567:d78f]:5000/user/{{ username }}/browse" enctype="multipart/form-data">
+            <input type="submit" value="浏览市场" class="button-new" style="margin-top:15px;"/>
+            </form>
+            <br>
+        </div>
+        <div>
+            <form method="post" action="http://[fe80::c16e:f8a8:9567:d78f]:5000/user/{{ username }}/sell" enctype="multipart/form-data">
+                <label>
+                    <input type="text" class="txt_input" placeholder="treasure" name="treasure" style="margin-top:15px;"/>
+                    <input type="text" class="txt_input" placeholder="price" name="price" style="margin-top:15px;"/>
+                </label>
+            <input type="submit" value="挂牌宝物" class="button-new" style="margin-top:15px;"/>
+            </form>
+            <br>
+        </div>
+        <div>
+            <form method="post" action="http://[fe80::c16e:f8a8:9567:d78f]:5000/user/{{ username }}/buy" enctype="multipart/form-data">
+                <label>
+                    <input type="text" class="txt_input" placeholder="treasure" name="treasure" style="margin-top:15px;"/>
+                    <input type="text" class="txt_input" placeholder="price" name="price" style="margin-top:15px;"/>
+                    <input type="text" class="txt_input" placeholder="seller" name="sell" style="margin-top:15px;"/>
+                </label>
+            <input type="submit" value="买宝物" class="button-new" style="margin-top:15px;"/>
+            </form>
+            <br>
+        </div>
+        <div>
+            <form method="post" action="http://[fe80::c16e:f8a8:9567:d78f]:5000/user/{{ username }}/back" enctype="multipart/form-data">
+                <label>
+                    <input type="text" class="txt_input" placeholder="treasure" name="treasure" style="margin-top:15px;"/>
+                    <input type="text" class="txt_input" placeholder="price" name="price" style="margin-top:15px;"/>
+                    <input type="text" class="txt_input" placeholder="seller" name="sell" style="margin-top:15px;"/>
+                </label>
+            <input type="submit" value="收回宝物" class="button-new" style="margin-top:15px;"/>
+            </form>
+            <br>
+        </div>
+        <div>
+            <form method="get" action="http://[fe80::c16e:f8a8:9567:d78f]:5000/user/{{ username }}/final" enctype="multipart/form-data">
+            <input type="submit" value="获得枭雄金印" class="button-new" style="margin-top:15px;"/>
+            </form>
+            <br>
+        </div>
+        <div>
+            <form method="post" action="http://[fe80::c16e:f8a8:9567:d78f]:5000/user/{{ username }}/wear" enctype="multipart/form-data">
+                <label>
+                    <input type="text" class="txt_input" placeholder="treasure" name="treasure" style="margin-top:15px;"/>
+                </label>
+            <input type="submit" value="穿戴" class="button-new" style="margin-top:15px;"/>
+            </form>
+            <br>
+        </div>
+        <div>
+            <form method="post" action="http://[fe80::c16e:f8a8:9567:d78f]:5000/user/{{ username }}/unwear" enctype="multipart/form-data">
+                <label>
+                    <input type="text" class="txt_input" placeholder="treasure" name="treasure" style="margin-top:15px;"/>
+                </label>
+            <input type="submit" value="脱掉" class="button-new" style="margin-top:15px;"/>
+            </form>
+            <br>
+        </div>
+        <div>
+            <form method="post" action="http://[fe80::c16e:f8a8:9567:d78f]:5000/user/{{ username }}/see" enctype="multipart/form-data">
+                <label>
+                    <input type="text" class="txt_input" placeholder="money/pocket/lucky/wear/onmarket" name="attr" style="margin-top:15px;"/>
+                </label>
+            <input type="submit" value="查看自己的某个属性" class="button-new" style="margin-top:15px;"/>
+            </form>
+            <br>
+        </div>
+        <div>
+            <form method="post" action="http://[fe80::c16e:f8a8:9567:d78f]:5000/user/{{ username }}/see" enctype="multipart/form-data">
+                <label>
+                    <input type="text" class="txt_input" placeholder="treasure" name="treasure" style="margin-top:15px;"/>
+                    <input type="text" class="txt_input" placeholder="property/value/level" name="attr" style="margin-top:15px;"/>
+                </label>
+            <input type="submit" value="查看宝物的某个属性" class="button-new" style="margin-top:15px;"/>
+            </form>
+            <br>
+        </div>
+<div id="result">
+                <h3>命令结果</h3>
+                <textarea rows="10" cols="50">
+{% if result %}
+    {{ result }}
+{% endif %}
+                </textarea>
+                <br>
+        </div>
+    <div id="introduction">
+                <h3>游戏介绍</h3>
+                <textarea rows="10" cols="200">
+操作：
+\1.   每个游戏玩家都有一定数量的金币、宝物。有一个市场供玩家们买卖宝物。玩家可以将宝物放到市场上**挂牌**，自己确定价格。其他玩家支付足够的金币，可购买宝物。
+\2.   宝物分为两类：一类为**工具，它决定持有玩家的工作能力**；一类为**配饰，它决定持有玩家的运气**。
+\3.   每位玩家每天可以通过**寻宝**获得一件宝物，宝物的价值由玩家的运气决定。每位玩家每天可以通过**劳动**赚取金币，赚得多少由玩家的工作能力决定，而工作能力也受运气的影响。（游戏中的一天是现实的一分钟。）
+\4.   每个宝物都有一个自己的名字。每位玩家只能佩戴**一个工具和两个配饰**。多余的宝物被放在存储箱中，不起作用，但可以拿到市场出售。
+\5.   在市场上**挂牌**的宝物必须在存储箱中并仍然在存储箱中，直到宝物被卖出。挂牌的宝物可以被**收回**，并以新的价格重新挂牌。当存储箱容量为10时，价值最低的宝物将被换成钱。
+\6.   玩家的最终目的是**获得最好的宝物枭雄金印**。（不停提升运气 提升共工作能力，获得好的饰品和最好的工具 循环）
+
+终极目标：通过工作、寻宝、交易等手段，获取五个束发紫金冠，并换得枭雄金印。
+                </textarea>
+                <br>
+        </div>
+    </body>
+</html>

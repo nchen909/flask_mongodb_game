@@ -15,4 +15,4 @@ if __name__ == '__main__':
     app.config['JSON_AS_ASCII']=False
     app.register_blueprint(bp)
     app.run(host='::',port=5000)#联机操作
-    app.run()
+    #app.run()
