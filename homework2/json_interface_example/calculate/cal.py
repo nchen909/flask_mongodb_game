@@ -14,9 +14,10 @@ import hashlib
 import urllib.parse
 import time
 import threading,json
+import ssl
 bp = Blueprint("mul", __name__, url_prefix="/user")
 #client = MongoClient('localhost', 27017)
-client=MongoClient('mongodb+srv://mathskiller:11111111qQ@flaskgame-aoyhi.mongodb.net/test?retryWrites=true&w=majority')
+client=MongoClient('mongodb+srv://mathskiller:11111111qQ@flaskgame-aoyhi.mongodb.net/test?retryWrites=true&w=majority', ssl_cert_reqs=ssl.CERT_NONE)
 user = client.game.user
 user.create_index([("name", ASCENDING)], unique=True)
 #user name money pocket lucky wear
