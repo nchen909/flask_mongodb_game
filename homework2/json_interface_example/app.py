@@ -14,5 +14,5 @@ if __name__ == '__main__':
     app.config['SECRET_KEY'] = os.urandom(24)
     app.config['JSON_AS_ASCII']=False
     app.register_blueprint(bp)
-    app.run(host='::',port=5000)#联机操作
+    app.run(host='0.0.0.0',port=5000)#联机操作
     #app.run()
