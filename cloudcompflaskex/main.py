@@ -45,15 +45,16 @@ def api_upload():
         ext = fname.rsplit('.', 1)[1]
         new_filename = Pic_str().create_uuid() + '.' + ext
         f.save(os.path.join(file_dir, new_filename))
-    
-        return jsonify({"success": 0, "msg": "上传成功"})
-    else:
-        return jsonify({"error": 1001, "msg": "上传失败"})
+        # return render_template('upload_pic.html', result=1)
+        #return jsonify({"success": 0, "msg": "上传成功"})
+    #else:
+        # return render_template('upload_pic.html', result=1)
+        #return jsonify({"error": 1001, "msg": "上传失败"})
     #cmd = 'curl -X POST -H "ServiceID:uaiservice-ad53msad" -H "Token:32f184961bc5d17e10c372ecad40e475" http://uinference-sh2.ucloud.cn/service  -T 2.jpg'
-    cmd=' curl -X POST -H "ServiceID:uaiservice-zsegqykh" -H "Token:5e40cfa614aba43c8f81da595e4d3b20" http://uinference-sh2.service.ucloud.cn/service -T 2.png'
+    cmd=' curl -X POST -H "ServiceID:uaiservice-zsegqykh" -H "Token:5e40cfa614aba43c8f81da595e4d3b20" http://uinference-sh2.service.ucloud.cn/service -T /data/2.png'
     msg = os.popen(cmd).read()
     print(msg)
-    render_template('upload_pic.html', result=msg)
+    return render_template('upload_pic.html', result=msg.strip())
 
 
 @app.route('/download/<string:filename>', methods=['GET'])
@@ -84,9 +85,9 @@ def index():
             #     forks=10
             # )
             # datastructure = runner.run()
-            for key, value in datastructure.items():
-                if 'contacted' in key:
-                    exec_result = value
+            # for key, value in datastructure.items():
+            #     if 'contacted' in key:
+            #         exec_result = value
             return render_template('upload_pic.html', result="test", ip=ip, cmd=cmd)
         else:
             return render_template('upload_pic.html')
