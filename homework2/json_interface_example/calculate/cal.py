@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 # coding:utf-8
+import sys
+reload(sys)
+sys.setdefaultencoding('utf8')
 from flask import Blueprint
 from flask import jsonify
 from flask import request
@@ -11,13 +14,14 @@ from pymongo import ASCENDING
 from random import choice
 from .func import *
 import hashlib
-import urllib.parse
+# import urllib.parse
+import urllib
 import time
 import threading,json
 import ssl
 bp = Blueprint("mul", __name__, url_prefix="/user")
 #client = MongoClient('localhost', 27017)
-client=MongoClient('mongodb+srv://mathskiller:11111111qQ@flaskgame-aoyhi.mongodb.net/test?retryWrites=true&w=majority', ssl_cert_reqs=ssl.CERT_NONE)
+client=MongoClient('mongodb+srv://mathskiller:11111111qQ@flaskgame-aoyhi.mongodb.net/test?retryWrites=true&w=majority')
 user = client.game.user
 user.create_index([("name", ASCENDING)], unique=True)
 #user name money pocket lucky wear
@@ -161,7 +165,7 @@ def login():
         #     sessiondb.delete_one({'username':username})
         # sessiondb.insert_one({'username':username,'session':request.cookies.get('session')})
         print('POSTgetusername:   ',session.get('username'))
-        return redirect('/user/test?username={0}&pwd={1}'.format(username,str(urllib.parse.quote(str(hashlib.md5(pwd.encode("utf-8")).digest()))))) # 如果是 POST 方法就执行登录操作
+        return redirect('/user/test?username={0}&pwd={1}'.format(username,str(urllib.pathname2url(str(hashlib.md5(pwd.encode("utf-8")).digest()))))) # 如果是 POST 方法就执行登录操作
     elif request.method == 'GET':
         print('GETgetusername:   ',session.get('username'))
         return render_template('login.html')   # 如果是 GET 方法就展示登录表单
@@ -254,6 +258,16 @@ def unwear(username):
 def operation(username):
     return render_template('operation.html',username=username)
 
+from flask import request
+def shutdown_server():
+    func = request.environ.get('werkzeug.server.shutdown')
+    if func is None:
+        raise RuntimeError('Not running with the Werkzeug Server')
+    func()
+@bp.route('/shutdown', methods=['POST'])
+def shutdown():
+    shutdown_server()
+    return 'Server shutting down...'
 # @bp.route("/<string:username>/buy/<string:treasure>", methods=['GET'])
 #     # def buy(username, treasure):
 #     #     # if session.get('username'):

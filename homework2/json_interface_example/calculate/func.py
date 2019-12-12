@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 # coding:utf-8
+import sys
+reload(sys)
+sys.setdefaultencoding('utf8')
 import pysnooper
 from flask import Blueprint
 from flask import jsonify
@@ -10,11 +13,11 @@ from pymongo import MongoClient
 from pymongo.errors import DuplicateKeyError
 from pymongo import ASCENDING
 import hashlib
-import urllib.parse
+import urllib
 import ssl
 bp = Blueprint("mul", __name__, url_prefix="/user")
 # client = MongoClient('localhost', 27017)
-client=MongoClient('mongodb+srv://mathskiller:11111111qQ@flaskgame-aoyhi.mongodb.net/test?retryWrites=true&w=majority', ssl_cert_reqs=ssl.CERT_NONE)
+client=MongoClient('mongodb+srv://mathskiller:11111111qQ@flaskgame-aoyhi.mongodb.net/test?retryWrites=true&w=majority')
 user = client.game.user
 user.create_index([("name", ASCENDING)], unique=True)
 #user name money pocket lucky wear
@@ -29,10 +32,10 @@ MAX_PS=2 #佩戴配饰最多为2个
 
 # 解析flask.wrappers.Response中包裹的字典,传入Response及需要的属性 返回对应值
 def ana(response_,value='result'):
-    return eval(str(response_.data, encoding = "utf-8"))[value]
+    return eval(str(response_.data).encode('utf-8'))[value]
 
 def ana2(response_):
-    return eval(str(response_.data, encoding = "utf-8"))
+    return eval(str(response_.data).encode('utf-8'))
 # 获取用户的某个属性
 def get_user(username,attr):
     # with pysnooper.snoop():
