@@ -9,25 +9,25 @@
             <h1>玩家{{ username }}</h1>
         </div>
         <div>
-            <form method="get" action="http://112.74.41.122:5000/user/{{ username }}/work" enctype="multipart/form-data">
+            <form method="get" action="http://47.101.151.73:4999/user/{{ username }}/work" enctype="multipart/form-data">
             <input type="submit" value="工作" class="button-new" style="margin-top:15px;"/>
             </form>
             <br>
         </div>
         <div>
-            <form method="get" action="http://112.74.41.122:5000/user/{{ username }}/travel" enctype="multipart/form-data">
+            <form method="get" action="http://47.101.151.73:4999/user/{{ username }}/travel" enctype="multipart/form-data">
             <input type="submit" value="寻宝" class="button-new" style="margin-top:15px;"/>
             </form>
             <br>
         </div>
         <div>
-            <form method="get" action="http://112.74.41.122:5000/user/{{ username }}/browse" enctype="multipart/form-data">
+            <form method="get" action="http://47.101.151.73:4999/user/{{ username }}/browse" enctype="multipart/form-data">
             <input type="submit" value="浏览市场" class="button-new" style="margin-top:15px;"/>
             </form>
             <br>
         </div>
         <div>
-            <form method="post" action="http://112.74.41.122:5000/user/{{ username }}/sell" enctype="multipart/form-data">
+            <form method="post" action="http://47.101.151.73:4999/user/{{ username }}/sell" enctype="multipart/form-data">
                 <label>
                     <input type="text" class="txt_input" placeholder="treasure" name="treasure" style="margin-top:15px;"/>
                     <input type="text" class="txt_input" placeholder="price" name="price" style="margin-top:15px;"/>
@@ -37,7 +37,7 @@
             <br>
         </div>
         <div>
-            <form method="post" action="http://112.74.41.122:5000/user/{{ username }}/buy" enctype="multipart/form-data">
+            <form method="post" action="http://47.101.151.73:4999/user/{{ username }}/buy" enctype="multipart/form-data">
                 <label>
                     <input type="text" class="txt_input" placeholder="treasure" name="treasure" style="margin-top:15px;"/>
                     <input type="text" class="txt_input" placeholder="price" name="price" style="margin-top:15px;"/>
@@ -48,7 +48,7 @@
             <br>
         </div>
         <div>
-            <form method="post" action="http://112.74.41.122:5000/user/{{ username }}/back" enctype="multipart/form-data">
+            <form method="post" action="http://47.101.151.73:4999/user/{{ username }}/back" enctype="multipart/form-data">
                 <label>
                     <input type="text" class="txt_input" placeholder="treasure" name="treasure" style="margin-top:15px;"/>
                     <input type="text" class="txt_input" placeholder="price" name="price" style="margin-top:15px;"/>
@@ -59,13 +59,13 @@
             <br>
         </div>
         <div>
-            <form method="get" action="http://112.74.41.122:5000/user/{{ username }}/final" enctype="multipart/form-data">
+            <form method="get" action="http://47.101.151.73:4999/user/{{ username }}/final" enctype="multipart/form-data">
             <input type="submit" value="获得枭雄金印" class="button-new" style="margin-top:15px;"/>
             </form>
             <br>
         </div>
         <div>
-            <form method="post" action="http://112.74.41.122:5000/user/{{ username }}/wear" enctype="multipart/form-data">
+            <form method="post" action="http://47.101.151.73:4999/user/{{ username }}/wear" enctype="multipart/form-data">
                 <label>
                     <input type="text" class="txt_input" placeholder="treasure" name="treasure" style="margin-top:15px;"/>
                 </label>
@@ -74,7 +74,7 @@
             <br>
         </div>
         <div>
-            <form method="post" action="http://112.74.41.122:5000/user/{{ username }}/unwear" enctype="multipart/form-data">
+            <form method="post" action="http://47.101.151.73:4999/user/{{ username }}/unwear" enctype="multipart/form-data">
                 <label>
                     <input type="text" class="txt_input" placeholder="treasure" name="treasure" style="margin-top:15px;"/>
                 </label>
@@ -83,7 +83,7 @@
             <br>
         </div>
         <div>
-            <form method="post" action="http://112.74.41.122:5000/user/{{ username }}/see" enctype="multipart/form-data">
+            <form method="post" action="http://47.101.151.73:4999/user/{{ username }}/see" enctype="multipart/form-data">
                 <label>
                     <input type="text" class="txt_input" placeholder="money/pocket/lucky/wear/onmarket" name="attr" style="margin-top:15px;"/>
                 </label>
@@ -92,12 +92,18 @@
             <br>
         </div>
         <div>
-            <form method="post" action="http://112.74.41.122:5000/user/{{ username }}/see" enctype="multipart/form-data">
+            <form method="post" action="http://47.101.151.73:4999/user/{{ username }}/see" enctype="multipart/form-data">
                 <label>
                     <input type="text" class="txt_input" placeholder="treasure" name="treasure" style="margin-top:15px;"/>
                     <input type="text" class="txt_input" placeholder="property/value/level" name="attr" style="margin-top:15px;"/>
                 </label>
             <input type="submit" value="查看宝物的某个属性" class="button-new" style="margin-top:15px;"/>
+            </form>
+            <br>
+        </div>
+        <div>
+            <form method="get" action="http://47.101.151.73:4999/user/{{ username }}/shutdown" enctype="multipart/form-data">
+            <input type="submit" value="关闭服务器" class="button-new" style="margin-top:15px;"/>
             </form>
             <br>
         </div>

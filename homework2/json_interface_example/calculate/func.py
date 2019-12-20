@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # coding:utf-8
-import sys
-reload(sys)
-sys.setdefaultencoding('utf8')
+import importlib,sys
+importlib.reload(sys)
+# sys.setdefaultencoding('utf8')
 import pysnooper
 from flask import Blueprint
 from flask import jsonify
@@ -29,13 +29,15 @@ MAX_POCKET=10#袋子里工具或配饰最多为10个
 MAX_GJ=1 #佩戴工具最多为1个
 MAX_PS=2 #佩戴配饰最多为2个
 ##################最终目的是合成 枭雄金印 ，return游戏成功
+import json
 
 # 解析flask.wrappers.Response中包裹的字典,传入Response及需要的属性 返回对应值
 def ana(response_,value='result'):
-    return eval(str(response_.data).encode('utf-8'))[value]
+    # return (eval(str(response_.data).encode('utf-8'))[value])#python2.7
+    return eval(str(response_.data,encoding=('utf-8')))[value]
 
 def ana2(response_):
-    return eval(str(response_.data).encode('utf-8'))
+    return eval(str(response_.data,encoding=('utf-8')))
 # 获取用户的某个属性
 def get_user(username,attr):
     # with pysnooper.snoop():

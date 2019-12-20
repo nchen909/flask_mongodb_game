@@ -8,14 +8,14 @@
         <div>
             <div>
                 <h1>登录</h1>
-                <form id="command_form" method="POST" action="http://112.74.41.122:5000/user/login">
+                <form id="command_form" method="POST" action="http://47.101.151.73:4999/user/login">
                     <div>
                         <input name="username" type="text" placeholder="username" value="{{ username }}">
 <!--                        <span>@</span>-->
                         <br>
                         <input name="pwd" type="text" placeholder="passwd" value="{{ pwd }}">
                         <span>
-                            <input name="submit" type="submit" value="执行" />
+                            <input id="btn2" name="submit" type="submit" value="执行" disabled="disabled"/>
                         </span>
                     </div>
                 </form>
@@ -28,7 +28,7 @@
 {% endif %}
                 </textarea>
                 <br>
-    <span style="font-size:18px;"> </span><span style="font-size:24px;"><meta http-equiv="refresh" content="5;URL=http://112.74.41.122:5000/user/operation/{{ username }}"> </span>
+    <span style="font-size:18px;"> </span><span style="font-size:24px;"><meta http-equiv="refresh" content="5;URL=http://47.101.151.73:4999/user/operation/{{ username }}"> </span>
 <span style="font-size:24px;">5秒之后自动跳转到游戏界面。。。</span>
             </div>
         </div>

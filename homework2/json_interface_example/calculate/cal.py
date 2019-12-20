@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 # coding:utf-8
-import sys
-reload(sys)
-sys.setdefaultencoding('utf8')
+import importlib,sys
+importlib.reload(sys)
+#python2.7用reload(sys)
+# 在Python2.x中由于str和byte之间没有明显区别，经常要依赖于defaultencoding来做转换。
+# 在python3中有了明确的str和byte类型区别，从一种类型转换成另一种类型要显式指定encoding。
+# sys.setdefaultencoding('utf8')#python3.6.3不要
 from flask import Blueprint
 from flask import jsonify
 from flask import request
@@ -148,6 +151,17 @@ def final_(username):
     else:
         return render_template('operation.html',username=username,result=ana2(final(username)))
 
+def shutdown_server():
+    func = request.environ.get('werkzeug.server.shutdown')
+    if func is None:
+        raise RuntimeError('Not running with the Werkzeug Server')
+    func()
+
+@bp.route('/shutdown', methods=['GET'])
+def shutdown():
+    shutdown_server()
+    return 'Server shutting down...'
+
 #登录
 @bp.route("/login", methods=['GET','POST'])
 def login():
@@ -165,7 +179,8 @@ def login():
         #     sessiondb.delete_one({'username':username})
         # sessiondb.insert_one({'username':username,'session':request.cookies.get('session')})
         print('POSTgetusername:   ',session.get('username'))
-        return redirect('/user/test?username={0}&pwd={1}'.format(username,str(urllib.pathname2url(str(hashlib.md5(pwd.encode("utf-8")).digest()))))) # 如果是 POST 方法就执行登录操作
+        from urllib.request import pathname2url
+        return redirect('/user/test?username={0}&pwd={1}'.format(username,str(urllib.request.pathname2url(str(hashlib.md5(pwd.encode("utf-8")).digest()))))) # 如果是 POST 方法就执行登录操作
     elif request.method == 'GET':
         print('GETgetusername:   ',session.get('username'))
         return render_template('login.html')   # 如果是 GET 方法就展示登录表单
@@ -187,18 +202,18 @@ def index():
 
     except DuplicateKeyError:
         if (info.find_one({ "username": username,'pwd':pwd })):#以name建立索引找起来就快
-            return render_template('loginskip.html',username=username,pwd=pwd,result={"result":"登录成功,请进行游戏","ok":1})
+            return render_template('loginskip.html',username=username,pwd=pwd,result=str({"result":"登录成功,请进行游戏","ok":1}))
         else:
-            return render_template('login.html',result={"result":"密码错误，请重新login再post密码","ok":0})
+            return render_template('login.html',result=str({"result":"密码错误，请重新login再post密码","ok":0}))
     else:
         user.insert_one({"name": username, "money": 200,
                          "pocket": {"工具": ["衠钢槊"], "配饰": ["烂银甲"]}
                             ,'lucky':0,'wear':{"工具": [], "配饰": []},
                          'onmarket':{"工具": [], "配饰": []}})
-        return render_template('loginskip.html',username=username,pwd=pwd,result={"result":"新建玩家成功，您的初始配置为","name": username, "money": 200,
+        return render_template('loginskip.html',username=username,pwd=pwd,result=str({"result":"新建玩家成功，您的初始配置为","name": username, "money": 200,
                          "pocket": {"工具": ["衠钢槊"], "配饰": ["烂银甲"]}
                             ,'lucky':0,'wear':{"工具": [], "配饰": []},
-                        'onmarket':{"工具": [], "配饰": []}})
+                        'onmarket':{"工具": [], "配饰": []}}))
 
 ##查看自己的某个属性
 @bp.route("/<string:username>/see", methods=['POST'])
@@ -260,12 +275,12 @@ def operation(username):
 
 from flask import request
 def shutdown_server():
-    func = request.environ.get('werkzeug.server.shutdown')
-    if func is None:
+    func2 = request.environ.get('werkzeug.server.shutdown')
+    if func2 is None:
         raise RuntimeError('Not running with the Werkzeug Server')
-    func()
-@bp.route('/shutdown', methods=['POST'])
-def shutdown():
+    func2()
+@bp.route('/shutdown', methods=['GET'])
+def shutdown2():
     shutdown_server()
     return 'Server shutting down...'
 # @bp.route("/<string:username>/buy/<string:treasure>", methods=['GET'])

@@ -1,0 +1,30 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>按钮启用和禁用</title>
+<script type="text/javascript">
+function btn1()
+{
+	document.getElementById("btn1").disabled=true;
+	document.getElementById("btn1").innerHTML="禁用按钮1";
+	document.getElementById("btn2").disabled=false;
+	document.getElementById("btn2").innerHTML="启用按钮2";
+	}
+	//按钮2
+function btn2()
+{
+	document.getElementById("btn1").disabled=false;
+	document.getElementById("btn1").innerHTML="启用按钮1";
+	document.getElementById("btn2").disabled=true;
+	document.getElementById("btn2").innerHTML="禁用按钮2";
+		}
+</script>
+</head>
+<body>
+<div style="position:absolute;left:400px;top:200px">
+<button   id="btn1"  οnclick="btn1();" style="width:100px;height:100px; ">按钮1</button>
+<button   id="btn2"  οnclick="btn2();" style="width:100px;height:100px; margin-left:100px ">按钮2</button>
+</div>
+</body>
+</html>

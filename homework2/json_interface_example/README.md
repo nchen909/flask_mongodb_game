@@ -11,19 +11,19 @@
     export FLASK_APP=calculate/__init__.py
     flask run
 
-终端显示，默认在5000端口监听
+终端显示，默认在4999端口监听
 
 > \* Serving Flask app "calculate/__init__.py" <br>
 > \* Environment: production <br>
 > WARNING: This is a development server. Do not use it in a production deployment. <br>
 > Use a production WSGI server instead. <br>
 > \* Debug mode: off <br>
-> \* Running on http://127.0.0.1:5000/ (Press CTRL+C to quit) <br>
+> \* Running on http://127.0.0.1:4999/ (Press CTRL+C to quit) <br>
 
 # 测试服务
 可能使用任何web客户端和浏览器测试服务。推荐使用[Postman](https://www.getpostman.com/).
 
-    curl -L 'http://127.0.0.1:5000/cal/add/10/30'
+    curl -L 'http://127.0.0.1:4999/cal/add/10/30'
 
 显示JSON格式响应
     
