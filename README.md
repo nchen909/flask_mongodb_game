@@ -1,4 +1,4 @@
-简陋的游戏前端链接：[](noname.asia) (ssl证书暂有些问题,不过http可以访问，请见谅)
+简陋的游戏前端链接：[](noname.asia "noname.asia") (ssl证书暂有些问题,不过http可以访问，请见谅)
 上云代码在分支tocloud
 
 mongodb及sql实现游戏
