@@ -1,4 +1,5 @@
-简陋的游戏前端链接：[noname.asia](noname.asia) (ssl证书暂有些问题,不过http可以访问，请见谅)
+简陋的游戏前端链接：[noname.asia](https://noname.asia) (可能登进去是另一个线上购物商城的前端，因为别的作业也在用这个域名展示。。)
+（可以通过[http://47.101.151.73:4999/user/login](http://47.101.151.73:4999/user/login)进入）
 上云代码在分支tocloud
 
 mongodb及sql实现游戏
