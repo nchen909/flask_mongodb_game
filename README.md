@@ -1,8 +1,10 @@
-简陋的游戏前端链接：[noname.asia](https://noname.asia) (可能登进去是另一个线上购物商城的前端，因为别的作业也在用这个域名展示。。)
-（可以通过[http://47.101.151.73:4999/user/login](http://47.101.151.73:4999/user/login)进入）
+## 游戏
+简陋的游戏前端链接：[noname.asia](https://noname.asia) 
+（若内容与游戏不同，可以通过[http://47.101.151.73:4999/user/login](http://47.101.151.73:4999/user/login)进入）
 上云代码在分支tocloud
 
 mongodb及sql实现游戏
+### 游戏内容
 
 考虑以下游戏场景：
 
@@ -22,7 +24,7 @@ mongodb及sql实现游戏
 
 
 
-mongodb
+### mongodb
 
 报告位于 [数据库游戏实验报告](https://github.com/1012598167/flask_mongodb_game/blob/master/%E6%95%B0%E6%8D%AE%E5%BA%93%E6%B8%B8%E6%88%8F%E5%AE%9E%E9%AA%8C%E6%8A%A5%E5%91%8A.md "\数据库游戏实验报告.md")
 
@@ -30,7 +32,7 @@ mongodb
 
 运行说明在[README.md](https://github.com/1012598167/flask_mongodb_game/blob/master/homework2/json_interface_example/README.md "\homework2\json_interface_example\README.md")
 
-postgresql
+### postgresql
 
 报告位于 [数据库游戏实验报告](https://github.com/1012598167/flask_mongodb_game/blob/master/%E6%95%B0%E6%8D%AE%E5%BA%93%E6%B8%B8%E6%88%8F%E5%AE%9E%E9%AA%8C%E6%8A%A5%E5%91%8Asqlgame.md "\数据库游戏实验报告.md")
 
@@ -38,6 +40,28 @@ postgresql
 
 运行说明在[README.md](https://github.com/1012598167/flask_mongodb_game/blob/master/homework2/json_interface_example/README.md "\homework2\json_interface_example\README.md")
 
-sql及之后所有实验报告位于[见该链接文件夹下的那些“实验报告.md”](https://github.com/1012598167/flask_mongodb_game/tree/master/Database-master)
+## 期末在线bookstore购物系统
+项目链接：https://github.com/1012598167/bookstore
 
-别的都是没用的
+###项目内容（使用posegresql）
+一个提供网上购书功能的网站后端。
+网站支持书商在上面开商店，购买者可能通过网站购买。
+买家和买家都可以注册自己的账号。
+一个买家可以开一个或多个网上商店， 买家可以为自已的账户充值，在任意商店购买图书。
+支持下单->付款->发货->收货，流程。
+1.对应接口的功能
+其中包括：
+1)用户权限接口，如注册、登录、登出、注销
+2)买家用户接口，如充值、下单、付款
+3)卖家用户接口，如创建店铺、填加书籍信息及描述、增加库存
+2.其它功能
+1)实现后续的流程
+发货 -> 收货
+2)搜索图书
+用户可以通过关键字搜索，参数化的搜索方式； 如搜索范围包括，题目，标签，目录，内容；全站搜索或是当前店铺搜索。 如果显示结果较大，需要分页 (使用全文索引优化查找)
+3)订单状态，订单查询和取消定单
+用户可以查自已的历史订单，用户也可以取消订单。
+取消定单，买家主动地取消定单，如果买家下单经过一段时间超时后，如果买家未付款，定单也会自动取消。
+
+## 课程实验报告
+sql及之后所有实验报告位于[见该链接文件夹下的那些“实验报告.md”](https://github.com/1012598167/flask_mongodb_game/tree/master/Database-master)
