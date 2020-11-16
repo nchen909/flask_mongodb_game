@@ -1,7 +1,7 @@
 
 ## 游戏
-简陋的游戏前端链接：[noname.asia](https://noname.asia) 
-（若内容与游戏不同，可以通过[http://47.101.151.73:4999/user/login](http://47.101.151.73:4999/user/login)进入）
+简陋的游戏前端链接：[mathskiller909.com/game](https://mathskiller909.com/game) 
+（若内容与游戏不同，可以通过[http://47.101.151.73:4999/](http://47.101.151.73:4999/)进入）
 上云代码在分支tocloud
 
 mongodb及sql实现游戏
@@ -32,7 +32,7 @@ mongodb及sql实现游戏
 运行说明在[README.md](https://github.com/1012598167/flask_mongodb_game/blob/master/homework2/json_interface_example/README.md "\homework2\json_interface_example\README.md")
 
 ## 期末在线bookstore购物系统
-项目链接：https://github.com/1012598167/bookstore ,购物链接：[noname.asia](https://noname.asia) 
+项目链接：https://github.com/1012598167/bookstore ,购物链接：[mathskiller909.com/taobao](https://mathskiller909.com/taobao) 
 （若内容与购物系统不同，可以通过[http://47.101.151.73:5001/auth/login](http://47.101.151.73:5001/auth/login)进入）
 
 ### 项目内容（使用posegresql）
